@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ICC LIVE HUB | Premium Sports Experience</title>
+  <title>ICC LIVE HUB | Sportlink</title>
   <!-- Tailwind + Font Awesome + Google Fonts -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -31,7 +32,7 @@
       color: var(--text-main);
       min-height: 100vh;
       overflow-x: hidden;
-      background-image: 
+      background-image:
         radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
         radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
     }
@@ -58,8 +59,13 @@
     }
 
     @keyframes float {
-      0% { transform: translate(-10%, -10%) scale(1); }
-      100% { transform: translate(20%, 20%) scale(1.2); }
+      0% {
+        transform: translate(-10%, -10%) scale(1);
+      }
+
+      100% {
+        transform: translate(20%, 20%) scale(1.2);
+      }
     }
 
     .container-custom {
@@ -178,9 +184,20 @@
     }
 
     @keyframes pulse {
-      0% { transform: scale(1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
-      50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(239, 68, 68, 0.8); }
-      100% { transform: scale(1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+      }
+
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
+      }
+
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+      }
     }
 
     .card-content {
@@ -259,18 +276,37 @@
     }
 
     @keyframes rotation {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .grid-item {
@@ -286,6 +322,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <div class="bg-glow">
@@ -320,7 +357,8 @@
 
     <footer class="footer-info">
       <div class="flex justify-center gap-6 mb-4">
-        <a href="https://t.me/jitendraunatti_github" target="_blank" class="hover:text-blue-400 transition-colors"><i class="fab fa-telegram-plane mr-2"></i>Telegram</a>
+        <a href="https://t.me/jitendraunatti_github" target="_blank" class="hover:text-blue-400 transition-colors"><i
+            class="fab fa-telegram-plane mr-2"></i>Telegram</a>
       </div>
       <p>&copy; 2026 ICC HUB Premium. All Rights Reserved.</p>
       <p class="mt-2 opacity-50" id="last-updated"></p>
@@ -328,120 +366,105 @@
   </div>
 
   <script>
-    const M3U_URL = "https://raw.githubusercontent.com/doctor-8trange/nexphi0/refs/heads/main/data/icc.m3u";
+    const DATA_URL = "https://raw.githubusercontent.com/doctor-8trange/nexphi0/refs/heads/main/data/icc.json";
     const PLAYER_URL = "icc-play.html";
 
-    let channels = [];
-
-    function parseM3U(text) {
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-      const parsed = [];
-      let current = null;
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        if (line.startsWith('#EXTINF:')) {
-          current = { title: '', logo: '', group: '', lang: '', id: '', url: '', keys: null };
-          // Extract title (after last comma)
-          const commaIdx = line.lastIndexOf(',');
-          if (commaIdx !== -1) current.title = line.substring(commaIdx + 1).trim();
-          // Extract attributes
-          const logoMatch = line.match(/tvg-logo="([^"]+)"/);
-          if (logoMatch) current.logo = logoMatch[1];
-          const groupMatch = line.match(/group-title="([^"]+)"/);
-          if (groupMatch) current.group = groupMatch[1];
-          const langMatch = line.match(/tvg-lang="([^"]+)"/);
-          if (langMatch) current.lang = langMatch[1];
-          const idMatch = line.match(/tvg-id="([^"]+)"/);
-          if (idMatch) current.id = idMatch[1];
-
-        } else if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=') && current) {
-          const keyData = line.substring('#KODIPROP:inputstream.adaptive.license_key='.length);
-          try { current.keys = JSON.parse(keyData); } catch(e) { console.error('Key parse error:', e); }
-
-        } else if (line.startsWith('http') && current) {
-          current.url = line;
-          parsed.push(current);
-          current = null;
-        }
-      }
-      return parsed;
-    }
+    let currentData = { live: [], upcoming: [] };
+    let activeTab = 'live';
 
     async function fetchData() {
       try {
-        const response = await fetch(M3U_URL);
-        const text = await response.text();
-        channels = parseM3U(text);
+        const response = await fetch(DATA_URL);
+        const data = await response.json();
+        currentData.live = data.live || [];
+        currentData.upcoming = data.upcoming || [];
 
-        // Extract date from M3U
-        const dateMatch = text.match(/#DATE:\s*-?\s*(.+)/);
-        if (dateMatch) {
-          document.getElementById('last-updated').innerText = `Last Updated: ${dateMatch[1].trim()}`;
-        }
+        document.getElementById('last-updated').innerText = `Last Updated: ${data.last_updated || 'Just now'}`;
 
-        renderChannels();
+        renderMatches();
         document.getElementById('loading').classList.add('hidden');
       } catch (error) {
-        console.error("Error fetching M3U:", error);
-        document.getElementById('loading').innerHTML = '<p class="text-red-500">Failed to load channels. Please try again later.</p>';
+        console.error("Error fetching data:", error);
+        document.getElementById('loading').innerHTML = '<p class="text-red-500">Failed to load match data. Please try again later.</p>';
       }
     }
 
-    function renderChannels() {
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      renderMatches();
+    }
+
+    function renderMatches() {
       const grid = document.getElementById('matches-grid');
       const noMatches = document.getElementById('no-matches');
+      const matches = activeTab === 'live' ? currentData.live : currentData.upcoming;
 
       grid.innerHTML = '';
-      if (channels.length === 0) {
+
+      if (matches.length === 0) {
         noMatches.classList.remove('hidden');
       } else {
         noMatches.classList.add('hidden');
-        channels.forEach((ch, index) => {
-          grid.appendChild(createCard(ch, index));
+        matches.forEach((match, index) => {
+          const card = createMatchCard(match, index, activeTab === 'live');
+          grid.appendChild(card);
         });
       }
     }
 
-    function createCard(ch, index) {
+    function createMatchCard(match, index, isLive) {
       const container = document.createElement('div');
       container.className = 'grid-item';
       container.style.animationDelay = `${index * 0.1}s`;
 
-      const thumb = ch.logo || 'https://images.icc-cricket.com/image/upload/t_ratio16_9-size40/prd/j5lu4qp67zuwbiclmcdm';
+      const thumb = match.thumbnail?.thumbnailUrl || 'https://images.icc-cricket.com/image/upload/t_ratio16_9-size40/prd/j5lu4qp67zuwbiclmcdm';
+      const title = match.title || 'ICC Cricket Match';
+      const startTime = match.fields?.scheduledStartTime ? new Date(match.fields.scheduledStartTime).toLocaleString() : 'TBD';
+      const status = match.fields?.videoStatus || (isLive ? 'Live' : 'Upcoming');
 
+      // Extract keys for player
       let keyParam = '';
-      if (ch.keys) {
-        keyParam = `&keys=${encodeURIComponent(JSON.stringify(ch.keys))}`;
+      if (match.playback?.keys?.jwk) {
+        keyParam = `&keys=${encodeURIComponent(JSON.stringify(match.playback.keys.jwk))}`;
+      } else if (match.playback?.keys?.hex) {
+        keyParam = `&hexKeys=${encodeURIComponent(match.playback.keys.hex)}`;
       }
 
-      const watchAction = `window.location.href='${PLAYER_URL}?url=${encodeURIComponent(ch.url)}${keyParam}'`;
+      const playbackUrl = match.playback?.playbackUrl || '';
+      const watchAction = isLive ? `window.location.href='${PLAYER_URL}?url=${encodeURIComponent(playbackUrl)}${keyParam}'` : '';
+      const watchBtnClass = isLive ? 'watch-btn' : 'watch-btn upcoming';
+      const watchText = isLive ? '<i class="fas fa-play"></i> WATCH LIVE' : '<i class="fas fa-clock"></i> COMING SOON';
 
       container.innerHTML = `
         <div class="match-card">
           <div class="card-image">
-            <img src="${thumb}" alt="${ch.title}" onerror="this.src='https://images.icc-cricket.com/image/upload/t_ratio16_9-size40/prd/j5lu4qp67zuwbiclmcdm'">
-            <div class="live-tag"><span class="w-2 h-2 bg-white rounded-full"></span>Live</div>
+            <img src="${thumb}" alt="${title}" onerror="this.src='https://images.icc-cricket.com/image/upload/t_ratio16_9-size40/prd/j5lu4qp67zuwbiclmcdm'">
+            ${isLive ? '<div class="live-tag"><span class="w-2 h-2 bg-white rounded-full"></span>Live</div>' : ''}
           </div>
           <div class="card-content">
-            <div class="match-status">${ch.group || 'CRICKET'} • ${ch.lang || 'English'}</div>
-            <h3 class="match-title">${ch.title}</h3>
+            <div class="match-status">${status}</div>
+            <h3 class="match-title">${title}</h3>
             <div class="match-meta">
-              <span><i class="fas fa-satellite-dish mr-2"></i>DASH Stream</span>
+              <span><i class="far fa-calendar-alt mr-2"></i>${startTime}</span>
             </div>
-            <div onclick="${watchAction}" class="watch-btn">
-              <i class="fas fa-play"></i> WATCH LIVE
+            <div onclick="${watchAction}" class="${watchBtnClass}">
+              ${watchText}
             </div>
           </div>
         </div>
       `;
+
       return container;
     }
 
     // Initialize
     fetchData();
+
+    // Auto refresh every 2 minutes
     setInterval(fetchData, 120000);
   </script>
 </body>
+
 </html>
