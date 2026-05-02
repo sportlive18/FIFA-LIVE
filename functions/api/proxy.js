@@ -3,27 +3,21 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const targetUrl = url.searchParams.get('u');
 
-  // Handle CORS preflight
   if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders(),
-    });
+    return new Response(null, { status: 204, headers: corsHeaders() });
   }
 
   if (!targetUrl) {
-    return new Response(JSON.stringify({ error: 'Missing "u" query parameter' }), {
-      status: 400,
-      headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify({ error: 'Missing "u" parameter' }), {
+      status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
     });
   }
 
   try {
-    const decodedUrl = decodeURIComponent(targetUrl);
-    const baseUrl = decodedUrl.substring(0, decodedUrl.lastIndexOf('/') + 1);
+    const fetchUrl = targetUrl;
+    const baseUrl = fetchUrl.substring(0, fetchUrl.lastIndexOf('/') + 1);
 
-    // Fetch from origin with ICC headers
-    const originResponse = await fetch(decodedUrl, {
+    const originResponse = await fetch(fetchUrl, {
       method: request.method,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0',
@@ -38,45 +32,42 @@ export async function onRequest(context) {
     let contentType = originResponse.headers.get('Content-Type') || 'application/octet-stream';
     let body = await originResponse.arrayBuffer();
 
-    // Detect manifest types
-    const isM3U8 = decodedUrl.includes('.m3u8') || contentType.includes('mpegurl');
-    const isMPD = decodedUrl.includes('.mpd') || contentType.includes('dash+xml');
+    const isM3U8 = fetchUrl.includes('.m3u8') || contentType.includes('mpegurl');
+    const isMPD = fetchUrl.includes('.mpd') || contentType.includes('dash+xml');
 
     if (isM3U8) {
-      // HLS: rewrite all URLs to go through proxy
       const text = new TextDecoder().decode(body);
       const proxyBase = url.origin + url.pathname;
-
       const rewritten = text.split('\n').map(line => {
         const trimmed = line.trim();
         if (!trimmed || trimmed.startsWith('#')) {
           if (trimmed.includes('URI="')) {
-            return trimmed.replace(/URI="([^"]+)"/g, (match, uri) => {
-              const absoluteUri = uri.startsWith('http') ? uri : baseUrl + uri;
-              return `URI="${proxyBase}?u=${encodeURIComponent(absoluteUri)}"`;
+            return trimmed.replace(/URI="([^"]+)"/g, (m, uri) => {
+              const abs = uri.startsWith('http') ? uri : baseUrl + uri;
+              return `URI="${proxyBase}?u=${encodeURIComponent(abs)}"`;
             });
           }
           return line;
         }
-        if (trimmed.startsWith('http')) {
-          return `${proxyBase}?u=${encodeURIComponent(trimmed)}`;
-        }
-        return `${proxyBase}?u=${encodeURIComponent(baseUrl + trimmed)}`;
+        const abs = trimmed.startsWith('http') ? trimmed : baseUrl + trimmed;
+        return `${proxyBase}?u=${encodeURIComponent(abs)}`;
       }).join('\n');
-
       body = new TextEncoder().encode(rewritten);
       contentType = 'application/vnd.apple.mpegurl';
 
     } else if (isMPD) {
-      // DASH: Inject <BaseURL> so Shaka resolves relative segment URLs
-      // against the original CDN path, NOT the proxy path
       let text = new TextDecoder().decode(body);
 
-      // Only inject BaseURL if one doesn't already exist at the top level
+      // Inject BaseURL for correct segment URL resolution
       if (!text.includes('<BaseURL>')) {
-        // Insert BaseURL right after the first <Period tag
-        text = text.replace(/<Period\b([^>]*)>/, `<Period$1>\n        <BaseURL>${escapeXml(baseUrl)}</BaseURL>`);
+        text = text.replace(/<Period\b([^>]*)>/, `<Period$1>\n        <BaseURL>${baseUrl}</BaseURL>`);
       }
+
+      // Strip Widevine and PlayReady ContentProtection to force ClearKey
+      text = text.replace(/<ContentProtection\s+schemeIdUri="urn:uuid:edef8ba9[^"]*"[^>]*>[\s\S]*?<\/ContentProtection>/g, '');
+      text = text.replace(/<ContentProtection\s+schemeIdUri="urn:uuid:edef8ba9[^"]*"[^>]*\/>/g, '');
+      text = text.replace(/<ContentProtection\s+schemeIdUri="urn:uuid:9a04f079[^"]*"[^>]*>[\s\S]*?<\/ContentProtection>/g, '');
+      text = text.replace(/<ContentProtection\s+schemeIdUri="urn:uuid:9a04f079[^"]*"[^>]*\/>/g, '');
 
       body = new TextEncoder().encode(text);
       contentType = 'application/dash+xml';
@@ -92,15 +83,10 @@ export async function onRequest(context) {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Proxy fetch failed', details: err.message }), {
-      status: 502,
-      headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify({ error: 'Proxy error', details: err.message }), {
+      status: 502, headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
     });
   }
-}
-
-function escapeXml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function corsHeaders() {
