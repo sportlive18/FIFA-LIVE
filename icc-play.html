@@ -621,6 +621,10 @@
           });
         }
 
+        // Compute original base URL for resolving relative paths in DASH manifest
+        const originalBaseUrl = streamUrl.substring(0, streamUrl.lastIndexOf('/') + 1);
+        const originalOrigin = new URL(streamUrl).origin;
+
         // Register network request filter - routes ALL requests through proxy
         player.getNetworkingEngine().registerRequestFilter(function(type, request) {
           request.uris = request.uris.map(uri => {
@@ -630,7 +634,17 @@
             if (uri.startsWith('http://') || uri.startsWith('https://')) {
               return PROXY_BASE + encodeURIComponent(uri);
             }
-            return uri;
+            // Relative URL — resolve against original CDN base URL, then proxy
+            let absoluteUrl;
+            if (uri.startsWith('/')) {
+              // Absolute path relative to origin
+              absoluteUrl = originalOrigin + uri;
+            } else {
+              // Relative path — resolve against manifest base directory
+              absoluteUrl = originalBaseUrl + uri;
+            }
+            console.log('Proxying relative URL:', uri, '->', absoluteUrl);
+            return PROXY_BASE + encodeURIComponent(absoluteUrl);
           });
         });
 
