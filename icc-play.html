@@ -519,7 +519,7 @@
 
 <div class="video-container">
 
-<div class="shaka-video-container" data-shaka-player>
+<div class="shaka-video-container" id="shaka-container">
   <video id="video" autoplay muted playsinline preload="auto"></video>
   
 
@@ -598,7 +598,7 @@
         
         if (jwkKeys) {
           try {
-            const parsedJwk = JSON.parse(decodeURIComponent(jwkKeys));
+            const parsedJwk = JSON.parse(jwkKeys);
             if (parsedJwk.keys) {
               parsedJwk.keys.forEach(keyObj => {
                 const kid = base64ToHex(keyObj.kid);
