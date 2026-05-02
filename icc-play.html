@@ -533,9 +533,10 @@
     const video = document.getElementById('video');
     const PROXY_BASE = '/api/proxy?u=';
 
-    // Helper to convert base64url to hex string
+    // Helper to convert base64url to hex string (with padding support)
     function base64ToHex(base64url) {
-      const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+      let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) base64 += '=';
       const raw = atob(base64);
       let result = '';
       for (let i = 0; i < raw.length; i++) {
@@ -599,14 +600,13 @@
         if (jwkKeys) {
           try {
             const parsedJwk = JSON.parse(jwkKeys);
-            if (parsedJwk.keys) {
-              parsedJwk.keys.forEach(keyObj => {
-                const kid = base64ToHex(keyObj.kid);
-                const key = base64ToHex(keyObj.k);
-                clearKeys[kid] = key;
-                console.log(`ClearKey KID: ${kid}, KEY: ${key}`);
-              });
-            }
+            const keysArray = parsedJwk.keys || (Array.isArray(parsedJwk) ? parsedJwk : []);
+            keysArray.forEach(keyObj => {
+              const kid = base64ToHex(keyObj.kid);
+              const key = base64ToHex(keyObj.k);
+              clearKeys[kid] = key;
+              console.log(`ClearKey KID: ${kid}, KEY: ${key}`);
+            });
           } catch (e) {
             console.error("Error parsing JWK keys:", e);
           }
@@ -621,31 +621,38 @@
           });
         }
 
-        // Compute original base URL for resolving relative paths in DASH manifest
-        const originalBaseUrl = streamUrl.substring(0, streamUrl.lastIndexOf('/') + 1);
-        const originalOrigin = new URL(streamUrl).origin;
+        // Register network filters
+        const networkingEngine = player.getNetworkingEngine();
 
-        // Register network request filter - routes ALL requests through proxy
-        player.getNetworkingEngine().registerRequestFilter(function(type, request) {
+        // Request Filter: Prepend proxy to all absolute URLs
+        networkingEngine.registerRequestFilter((type, request) => {
           request.uris = request.uris.map(uri => {
-            // If already proxied, skip
-            if (uri.includes('/api/proxy')) return uri;
-            // If it's an absolute URL, proxy it
-            if (uri.startsWith('http://') || uri.startsWith('https://')) {
+            if (uri.startsWith('http') && !uri.includes(location.origin) && !uri.includes('/api/proxy')) {
               return PROXY_BASE + encodeURIComponent(uri);
             }
-            // Relative URL — resolve against original CDN base URL, then proxy
-            let absoluteUrl;
-            if (uri.startsWith('/')) {
-              // Absolute path relative to origin
-              absoluteUrl = originalOrigin + uri;
-            } else {
-              // Relative path — resolve against manifest base directory
-              absoluteUrl = originalBaseUrl + uri;
-            }
-            console.log('Proxying relative URL:', uri, '->', absoluteUrl);
-            return PROXY_BASE + encodeURIComponent(absoluteUrl);
+            return uri;
           });
+        });
+
+        // Response Filter: Override response URI for manifests to maintain correct base URL
+        networkingEngine.registerResponseFilter((type, response) => {
+          if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST) {
+            // Extract the original target URL from the proxied URI
+            try {
+              const proxiedUri = response.uri;
+              if (proxiedUri.includes('u=')) {
+                const urlObj = new URL(proxiedUri, location.href);
+                const originalUrl = urlObj.searchParams.get('u');
+                if (originalUrl) {
+                  console.log("Restoring original manifest URI for base resolution:", originalUrl);
+                  response.uri = originalUrl;
+                }
+              }
+            } catch (e) {
+              // Fallback to streamUrl if parsing fails
+              response.uri = streamUrl;
+            }
+          }
         });
 
         // Apply player configurations

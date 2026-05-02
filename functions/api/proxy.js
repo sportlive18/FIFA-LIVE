@@ -20,7 +20,7 @@ export async function onRequest(context) {
     const originResponse = await fetch(fetchUrl, {
       method: request.method,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': '*/*',
         'Accept-Language': 'en-US,en;q=0.9',
         'Origin': 'https://www.icc-cricket.com',
@@ -33,7 +33,7 @@ export async function onRequest(context) {
     let body = await originResponse.arrayBuffer();
 
     const isM3U8 = fetchUrl.includes('.m3u8') || contentType.includes('mpegurl');
-    const isMPD = fetchUrl.includes('.mpd') || contentType.includes('dash+xml');
+    const isMPD = fetchUrl.includes('.mpd') || contentType.includes('dash+xml') || contentType.includes('application/xml');
 
     if (isM3U8) {
       const text = new TextDecoder().decode(body);
@@ -58,16 +58,18 @@ export async function onRequest(context) {
     } else if (isMPD) {
       let text = new TextDecoder().decode(body);
 
-      // Inject BaseURL for correct segment URL resolution
-      if (!text.includes('<BaseURL>')) {
-        text = text.replace(/<Period\b([^>]*)>/, `<Period$1>\n        <BaseURL>${baseUrl}</BaseURL>`);
+      // Inject BaseURL if missing or relative to ensure segments are resolved correctly
+      // We inject it at the Period level for maximum compatibility
+      if (!text.includes('<BaseURL>') || text.includes('<BaseURL>./</BaseURL>')) {
+        text = text.replace(/<Period\b([^>]*)>/g, `<Period$1>\n      <BaseURL>${baseUrl}</BaseURL>`);
       }
 
       // Strip Widevine and PlayReady ContentProtection to force ClearKey
-      text = text.replace(/<ContentProtection\s+schemeIdUri="urn:uuid:edef8ba9[^"]*"[^>]*>[\s\S]*?<\/ContentProtection>/g, '');
-      text = text.replace(/<ContentProtection\s+schemeIdUri="urn:uuid:edef8ba9[^"]*"[^>]*\/>/g, '');
-      text = text.replace(/<ContentProtection\s+schemeIdUri="urn:uuid:9a04f079[^"]*"[^>]*>[\s\S]*?<\/ContentProtection>/g, '');
-      text = text.replace(/<ContentProtection\s+schemeIdUri="urn:uuid:9a04f079[^"]*"[^>]*\/>/g, '');
+      // Uses a more robust regex to catch different variations
+      text = text.replace(/<ContentProtection[^>]+schemeIdUri="urn:uuid:edef8ba9[^"]*"[^>]*>[\s\S]*?<\/ContentProtection>/g, '');
+      text = text.replace(/<ContentProtection[^>]+schemeIdUri="urn:uuid:edef8ba9[^"]*"[^>]*\/>/g, '');
+      text = text.replace(/<ContentProtection[^>]+schemeIdUri="urn:uuid:9a04f079[^"]*"[^>]*>[\s\S]*?<\/ContentProtection>/g, '');
+      text = text.replace(/<ContentProtection[^>]+schemeIdUri="urn:uuid:9a04f079[^"]*"[^>]*\/>/g, '');
 
       body = new TextEncoder().encode(text);
       contentType = 'application/dash+xml';
