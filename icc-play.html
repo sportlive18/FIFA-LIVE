@@ -531,6 +531,19 @@
 
     let player;
     const video = document.getElementById('video');
+    const PROXY_BASE = '/api/proxy?u=';
+
+    // Helper to convert base64url to hex string
+    function base64ToHex(base64url) {
+      const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+      const raw = atob(base64);
+      let result = '';
+      for (let i = 0; i < raw.length; i++) {
+        const hex = raw.charCodeAt(i).toString(16);
+        result += (hex.length === 2 ? hex : '0' + hex);
+      }
+      return result;
+    }
 
     async function initializePlayer() {
       try {
@@ -541,17 +554,25 @@
 
         if (!streamUrl) {
           console.error("No stream URL provided");
+          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-size:1.2rem;">No stream URL provided</div>';
           return;
         }
 
+        console.log("Stream URL:", streamUrl);
+
         player = new shaka.Player();
         await player.attach(video);
+
+        // Error listener
+        player.addEventListener('error', (event) => {
+          console.error('Shaka Error:', event.detail);
+        });
 
         // UI Configuration
         const container = document.querySelector('.shaka-video-container');
         const ui = new shaka.ui.Overlay(player, container, video);
         
-        const config = {
+        const uiConfig = {
           'seekBarColors': {
             base: 'rgba(255,255,255,.2)',
             buffered: 'rgba(255,255,255,.4)',
@@ -564,14 +585,16 @@
             'time_and_duration',
             'spacer',
             'quality',
+            'language',
+            'picture_in_picture',
             'fullscreen',
             'overflow_menu'
           ]
         };
-        ui.configure(config);
+        ui.configure(uiConfig);
 
         // DRM Configuration (ClearKey)
-        const drmConfig = { clearKeys: {} };
+        const clearKeys = {};
         
         if (jwkKeys) {
           try {
@@ -580,7 +603,8 @@
               parsedJwk.keys.forEach(keyObj => {
                 const kid = base64ToHex(keyObj.kid);
                 const key = base64ToHex(keyObj.k);
-                drmConfig.clearKeys[kid] = key;
+                clearKeys[kid] = key;
+                console.log(`ClearKey KID: ${kid}, KEY: ${key}`);
               });
             }
           } catch (e) {
@@ -590,55 +614,97 @@
           const pairs = decodeURIComponent(hexKeys).split(',');
           pairs.forEach(pair => {
             const [kid, key] = pair.split(':');
-            if (kid && key) drmConfig.clearKeys[kid.trim()] = key.trim();
+            if (kid && key) {
+              clearKeys[kid.trim()] = key.trim();
+              console.log(`ClearKey HEX KID: ${kid.trim()}, KEY: ${key.trim()}`);
+            }
           });
         }
 
-        // Apply configurations
-        player.configure({
-          drm: drmConfig,
-          streaming: {
-            bufferingGoal: 15,
-            rebufferingGoal: 5,
-            alwaysStreamText: true
-          }
+        // Register network request filter - routes ALL requests through proxy
+        player.getNetworkingEngine().registerRequestFilter(function(type, request) {
+          request.uris = request.uris.map(uri => {
+            // If already proxied, skip
+            if (uri.includes('/api/proxy')) return uri;
+            // If it's an absolute URL, proxy it
+            if (uri.startsWith('http://') || uri.startsWith('https://')) {
+              return PROXY_BASE + encodeURIComponent(uri);
+            }
+            return uri;
+          });
         });
 
-        // Helper to convert base64 (url-safe) to hex
-        function base64ToHex(base64) {
-          const raw = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
-          let result = '';
-          for (let i = 0; i < raw.length; i++) {
-            const hex = raw.charCodeAt(i).toString(16);
-            result += (hex.length === 2 ? hex : '0' + hex);
+        // Apply player configurations
+        const hasClearKeys = Object.keys(clearKeys).length > 0;
+        const playerConfig = {
+          streaming: {
+            bufferingGoal: 20,
+            rebufferingGoal: 5,
+            bufferBehind: 30,
+            retryParameters: {
+              timeout: 30000,
+              maxAttempts: 5,
+              baseDelay: 1000,
+              backoffFactor: 2,
+              fuzzFactor: 0.5
+            }
+          },
+          manifest: {
+            retryParameters: {
+              timeout: 30000,
+              maxAttempts: 5,
+              baseDelay: 1000,
+              backoffFactor: 2,
+              fuzzFactor: 0.5
+            }
           }
-          return result;
+        };
+
+        if (hasClearKeys) {
+          playerConfig.drm = { clearKeys: clearKeys };
+          console.log("ClearKey DRM configured:", clearKeys);
         }
 
-        // Proxy URL if needed
-        const finalUrl = streamUrl.includes('akamaized.net') || streamUrl.includes('icc-cricket.com') 
-          ? '/api/proxy?u=' + encodeURIComponent(streamUrl) 
-          : streamUrl;
+        player.configure(playerConfig);
 
-        console.log("Loading stream with DRM:", finalUrl, drmConfig);
-        await player.load(finalUrl);
-        video.play();
+        // Load the manifest — proxy the initial manifest URL
+        const manifestUrl = PROXY_BASE + encodeURIComponent(streamUrl);
+        console.log("Loading manifest via proxy:", manifestUrl);
+        
+        await player.load(manifestUrl);
+        console.log("Stream loaded successfully!");
+
+        // Autoplay handling
+        video.muted = true;
+        try {
+          await video.play();
+          console.log("Autoplay (muted) successful");
+          // Try unmuting after a short delay
+          setTimeout(() => {
+            video.muted = false;
+            console.log("Audio unmuted");
+          }, 500);
+        } catch (playError) {
+          console.log("Autoplay failed, waiting for user interaction:", playError);
+        }
 
       } catch (error) {
-        console.error('Error initializing player:', error);
+        console.error('Player initialization error:', error);
+        if (error.code) {
+          console.error('Shaka error code:', error.code, 'Category:', error.category);
+        }
       }
     }
-        
 
-  // Initialize player when page loads
+    // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
       initializePlayer().catch(error => {
-        console.error('Error initializing player:', error);
+        console.error('Fatal player error:', error);
       });
     });
 
-// Show popup after delay (2 seconds)
-setTimeout(() => { 
-    document.getElementById('whatsappPopup').style.display = 'block'; 
-}, 2000);
+    // Show popup after delay
+    setTimeout(() => { 
+      document.getElementById('whatsappPopup').style.display = 'block'; 
+    }, 3000);
 </script>
