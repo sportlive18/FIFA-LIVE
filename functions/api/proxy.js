@@ -20,8 +20,9 @@ export async function onRequest(context) {
 
   try {
     const decodedUrl = decodeURIComponent(targetUrl);
+    const baseUrl = decodedUrl.substring(0, decodedUrl.lastIndexOf('/') + 1);
 
-    // Fetch from origin with ICC-specific headers
+    // Fetch from origin with ICC headers
     const originResponse = await fetch(decodedUrl, {
       method: request.method,
       headers: {
@@ -34,18 +35,16 @@ export async function onRequest(context) {
       redirect: 'follow',
     });
 
-    // Get response body and content type
     let contentType = originResponse.headers.get('Content-Type') || 'application/octet-stream';
     let body = await originResponse.arrayBuffer();
 
     // Detect manifest types
-    const isM3U8 = decodedUrl.includes('.m3u8') || contentType.includes('mpegurl') || contentType.includes('m3u8');
-    const isMPD = decodedUrl.includes('.mpd') || contentType.includes('dash+xml') || contentType.includes('xml');
+    const isM3U8 = decodedUrl.includes('.m3u8') || contentType.includes('mpegurl');
+    const isMPD = decodedUrl.includes('.mpd') || contentType.includes('dash+xml');
 
     if (isM3U8) {
-      // HLS: rewrite segment/playlist URLs to go through proxy
+      // HLS: rewrite all URLs to go through proxy
       const text = new TextDecoder().decode(body);
-      const baseUrl = decodedUrl.substring(0, decodedUrl.lastIndexOf('/') + 1);
       const proxyBase = url.origin + url.pathname;
 
       const rewritten = text.split('\n').map(line => {
@@ -62,38 +61,46 @@ export async function onRequest(context) {
         if (trimmed.startsWith('http')) {
           return `${proxyBase}?u=${encodeURIComponent(trimmed)}`;
         }
-        const absoluteUrl = baseUrl + trimmed;
-        return `${proxyBase}?u=${encodeURIComponent(absoluteUrl)}`;
+        return `${proxyBase}?u=${encodeURIComponent(baseUrl + trimmed)}`;
       }).join('\n');
 
       body = new TextEncoder().encode(rewritten);
       contentType = 'application/vnd.apple.mpegurl';
-    }
 
-    // For MPD/DASH: just pass through as-is
-    // The Shaka Player request filter handles proxying all sub-requests
-    if (isMPD && !contentType.includes('dash+xml')) {
+    } else if (isMPD) {
+      // DASH: Inject <BaseURL> so Shaka resolves relative segment URLs
+      // against the original CDN path, NOT the proxy path
+      let text = new TextDecoder().decode(body);
+
+      // Only inject BaseURL if one doesn't already exist at the top level
+      if (!text.includes('<BaseURL>')) {
+        // Insert BaseURL right after the first <Period tag
+        text = text.replace(/<Period\b([^>]*)>/, `<Period$1>\n        <BaseURL>${escapeXml(baseUrl)}</BaseURL>`);
+      }
+
+      body = new TextEncoder().encode(text);
       contentType = 'application/dash+xml';
     }
 
-    // Build response headers
-    const responseHeaders = {
-      ...corsHeaders(),
-      'Content-Type': contentType,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-    };
-
     return new Response(body, {
       status: originResponse.status,
-      headers: responseHeaders,
+      headers: {
+        ...corsHeaders(),
+        'Content-Type': contentType,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Proxy fetch failed', details: err.message, url: targetUrl }), {
+    return new Response(JSON.stringify({ error: 'Proxy fetch failed', details: err.message }), {
       status: 502,
       headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
     });
   }
+}
+
+function escapeXml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function corsHeaders() {
