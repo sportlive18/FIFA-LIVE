@@ -7,8 +7,6 @@ export async function onRequest(context) {
     return new Response(null, { status: 204, headers: corsHeaders() });
   }
 
-  if (url.pathname.endsWith('/m3u')) return handleM3U(url);
-
   const targetUrl = url.searchParams.get('u');
   if (!targetUrl) {
     return new Response(JSON.stringify({ error: 'Missing "u" parameter' }), {
@@ -16,38 +14,6 @@ export async function onRequest(context) {
     });
   }
   return handleProxy(targetUrl, url);
-}
-
-// ── M3U Generator ──────────────────────────────────────────────────────────
-async function handleM3U(requestUrl) {
-  const DATA_URL = 'https://raw.githubusercontent.com/doctor-8trange/nexphi0/refs/heads/main/data/icc.json';
-  const PLAYER   = `${requestUrl.origin}/icc-play.html`;
-  let data;
-  try {
-    data = await (await fetch(DATA_URL)).json();
-  } catch(e) {
-    return new Response(`#EXTM3U\n# Error: ${e.message}`, { status:502, headers:{...corsHeaders(),'Content-Type':'application/x-mpegurl'} });
-  }
-  const lines = ['#EXTM3U'];
-  for (const match of [...(data.live||[]),...(data.upcoming||[])]) {
-    const pb = match.playback;
-    if (!pb?.playbackUrl) continue;
-    const title = match.title||'ICC Match';
-    const thumb = match.thumbnail?.thumbnailUrl||'';
-    const group = match.fields?.videoStatus==='Live'?'ICC LIVE':'ICC UPCOMING';
-    let keyParam = pb.keys?.hex ? `&hexKeys=${encodeURIComponent(pb.keys.hex)}`
-      : pb.keys?.jwk ? `&keys=${encodeURIComponent(JSON.stringify(pb.keys.jwk))}` : '';
-    let hdrParam = pb.headers?.length ? `&headers=${encodeURIComponent(JSON.stringify(pb.headers))}` : '';
-    const proxied = `${requestUrl.origin}/api/proxy?u=${encodeURIComponent(pb.playbackUrl)}`;
-    const playerLink = `${PLAYER}?url=${encodeURIComponent(pb.playbackUrl)}${keyParam}${hdrParam}`;
-    lines.push(
-      `#EXTINF:-1 tvg-name="${title}" tvg-logo="${thumb}" group-title="${group}" icc-player="${encodeURIComponent(playerLink)}", ${title}`,
-      proxied
-    );
-  }
-  return new Response(lines.join('\n'), {
-    headers:{...corsHeaders(),'Content-Type':'application/x-mpegurl','Content-Disposition':'attachment; filename="icc.m3u"','Cache-Control':'no-cache'}
-  });
 }
 
 // ── Stream Proxy ───────────────────────────────────────────────────────────
@@ -74,7 +40,17 @@ async function handleProxy(targetUrl, requestUrl) {
       'Accept-Language': 'en-US,en;q=0.9',
     };
 
-    const originResp = await fetch(targetUrl, { method:'GET', headers:fetchHeaders, redirect:'follow' });
+    // Forward other common headers if present in extraHeaders
+    ['Authorization', 'Cookie', 'X-Forwarded-For'].forEach(h => {
+      if (extraHeaders[h]) fetchHeaders[h] = extraHeaders[h];
+    });
+
+    const originResp = await fetch(targetUrl, { 
+      method: 'GET', 
+      headers: fetchHeaders, 
+      redirect: 'follow' 
+    });
+
     let contentType = originResp.headers.get('Content-Type') || 'application/octet-stream';
     let body = await originResp.arrayBuffer();
 
@@ -85,12 +61,7 @@ async function handleProxy(targetUrl, requestUrl) {
       let text = new TextDecoder().decode(body);
 
       // ── Rewrite all URLs inside MPD to go through this proxy ──────
-      // This is the KEY fix: we rewrite URLs in the MPD text itself,
-      // so Shaka never sees a CDN URL — every URL is already proxied.
-      // No response filter needed in the player.
       const proxyBase = requestUrl.origin + requestUrl.pathname;
-
-      // Build the headers param to carry forward into segment requests
       const hParam = requestUrl.searchParams.get('headers')
         ? '&headers=' + requestUrl.searchParams.get('headers')
         : '';
@@ -100,7 +71,6 @@ async function handleProxy(targetUrl, requestUrl) {
         return proxyBase + '?u=' + encodeURIComponent(u) + hParam;
       }
 
-      // Compute base URL from the MPD's own URL (for resolving relative paths)
       const mpdBase = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
 
       function toAbsolute(u) {
@@ -116,7 +86,6 @@ async function handleProxy(targetUrl, requestUrl) {
       });
 
       // 2. If NO BaseURL exists at all, inject one at Period level
-      //    pointing to the proxied MPD directory
       if (!text.includes('<BaseURL>')) {
         const proxiedBase = proxyUrl(mpdBase);
         text = text.replace(/<Period\b([^>]*)>/g, `<Period$1>\n    <BaseURL>${proxiedBase}</BaseURL>`);

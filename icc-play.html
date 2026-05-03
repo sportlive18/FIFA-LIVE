@@ -83,7 +83,12 @@ async function init() {
     'Origin':     'https://www.icc-cricket.com'
   };
   if (hdr) {
-    try { JSON.parse(decodeURIComponent(hdr)).forEach(h=>{const i=h.indexOf(': ');if(i>-1)fwd[h.slice(0,i)]=h.slice(i+2);}); }
+    try { 
+      const parsedHdr = JSON.parse(decodeURIComponent(hdr));
+      if (Array.isArray(parsedHdr)) {
+        parsedHdr.forEach(h=>{const i=h.indexOf(': ');if(i>-1)fwd[h.slice(0,i)]=h.slice(i+2);}); 
+      }
+    }
     catch(e){ log('Header parse err: '+e,'warn'); }
   }
   const hParam = encodeURIComponent(JSON.stringify(Object.entries(fwd).map(([k,v])=>`${k}: ${v}`)));
@@ -141,8 +146,6 @@ async function init() {
       return uri;
     });
   });
-
-  // NO response filter — the proxy handles everything in MPD text itself
 
   // Config
   const cfg = {
