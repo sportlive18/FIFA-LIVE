@@ -61,9 +61,11 @@ function log(msg, cls='inf') {
 }
 
 function b64ToHex(s) {
-  let b = s.replace(/-/g,'+').replace(/_/g,'/');
-  while (b.length%4) b+='=';
-  return Array.from(atob(b)).map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join('');
+  try {
+    let b = s.replace(/-/g,'+').replace(/_/g,'/');
+    while (b.length%4) b+='=';
+    return Array.from(atob(b)).map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join('');
+  } catch(e) { return s; }
 }
 
 async function init() {
@@ -84,9 +86,12 @@ async function init() {
   };
   if (hdr) {
     try { 
-      const parsedHdr = JSON.parse(decodeURIComponent(hdr));
+      const parsedHdr = JSON.parse(hdr);
       if (Array.isArray(parsedHdr)) {
-        parsedHdr.forEach(h=>{const i=h.indexOf(': ');if(i>-1)fwd[h.slice(0,i)]=h.slice(i+2);}); 
+        parsedHdr.forEach(h=>{
+          const i = h.indexOf(': ');
+          if (i > -1) fwd[h.slice(0,i)] = h.slice(i+2);
+        }); 
       }
     }
     catch(e){ log('Header parse err: '+e,'warn'); }
@@ -99,48 +104,45 @@ async function init() {
     try {
       const obj=JSON.parse(jwk), arr=obj.keys||(Array.isArray(obj)?obj:[]);
       arr.forEach(k=>{clearKeys[b64ToHex(k.kid)]=b64ToHex(k.k);});
-      log('ClearKey (JWK) ✓','ok');
+      log('ClearKey (JWK) configured','ok');
     } catch(e){ log('JWK err: '+e,'err'); }
   } else if (hex) {
-    decodeURIComponent(hex).split(',').forEach(pr=>{const[k,v]=pr.split(':');if(k&&v)clearKeys[k.trim()]=v.trim();});
-    log('ClearKey (hex) ✓','ok');
+    try {
+      decodeURIComponent(hex).split(',').forEach(pr=>{
+        const[k,v]=pr.split(':');
+        if(k&&v) clearKeys[k.trim()]=v.trim();
+      });
+      log('ClearKey (hex) configured','ok');
+    } catch(e){ log('Hex keys err: '+e,'err'); }
   }
 
   if (player) { try{await player.destroy();}catch(_){} player=null; }
 
-  // Pass video to constructor — synchronous attach, no black frame
   player = new shaka.Player(video);
 
   player.addEventListener('error', e => {
-    log(`Shaka ${e.detail.code}: ${e.detail.message||JSON.stringify(e.detail)}`, 'err');
+    log(`Shaka Error ${e.detail.code}: ${e.detail.message||'Check console'}`, 'err');
+    console.error('Shaka error:', e.detail);
   });
 
   video.addEventListener('canplay', ()=>{
-    log('▶ canplay — stream is live!','ok');
-    setTimeout(()=>statusEl.classList.add('hidden'), 2000);
+    log('▶ Stream is ready!','ok');
+    setTimeout(()=>statusEl.classList.add('hidden'), 3000);
   }, {once:true});
 
   // UI
-  new shaka.ui.Overlay(player, document.getElementById('shaka-container'), video).configure({
+  const ui = new shaka.ui.Overlay(player, document.getElementById('shaka-container'), video);
+  ui.configure({
     seekBarColors:{base:'rgba(255,255,255,.2)',buffered:'rgba(255,255,255,.4)',played:'rgb(59,130,246)'},
     controlPanelElements:['play_pause','mute','volume','time_and_duration','spacer',
       'quality','language','picture_in_picture','fullscreen','overflow_menu']
   });
 
-  // ── Network filter ────────────────────────────────────────────────
-  // The proxy now rewrites ALL URLs inside the MPD text,
-  // so Shaka only ever sees already-proxied URLs.
-  // The request filter here is a safety net for any URL Shaka
-  // constructs itself (e.g. from SegmentTemplate with relative paths).
   const net = player.getNetworkingEngine();
 
   net.registerRequestFilter((type, req) => {
     req.uris = req.uris.map(uri => {
-      // Only proxy if it's a raw CDN URL (not already proxied)
-      if (uri.startsWith('http') &&
-          !uri.includes(location.origin) &&
-          !uri.includes('/api/proxy')) {
-        log('Intercepted raw CDN url (type='+type+'): '+uri.substring(0,60), 'warn');
+      if (uri.startsWith('http') && !uri.includes(location.origin) && !uri.includes('/api/proxy')) {
         return PROXY + encodeURIComponent(uri) + '&headers=' + hParam;
       }
       return uri;
@@ -149,33 +151,40 @@ async function init() {
 
   // Config
   const cfg = {
-    streaming:{ bufferingGoal:20, rebufferingGoal:5, bufferBehind:30,
-      retryParameters:{timeout:30000,maxAttempts:5,baseDelay:1000,backoffFactor:2,fuzzFactor:.5} },
-    manifest:{ retryParameters:{timeout:30000,maxAttempts:5,baseDelay:1000,backoffFactor:2,fuzzFactor:.5} }
+    streaming:{ 
+      bufferingGoal:20, rebufferingGoal:5, bufferBehind:30,
+      retryParameters:{timeout:30000,maxAttempts:5,baseDelay:1000,backoffFactor:2,fuzzFactor:.5} 
+    },
+    manifest:{ 
+      retryParameters:{timeout:30000,maxAttempts:5,baseDelay:1000,backoffFactor:2,fuzzFactor:.5} 
+    }
   };
   if (Object.keys(clearKeys).length) {
     cfg.drm = { clearKeys };
-    log('DRM configured','ok');
   }
   player.configure(cfg);
 
   // Load
   try {
     const manifestUrl = PROXY + encodeURIComponent(url) + '&headers=' + hParam;
-    log('Loading manifest via proxy…');
+    log('Loading via proxy…');
     await player.load(manifestUrl);
-    log('load() ✓','ok');
+    log('Manifest loaded ✓','ok');
 
     await video.play();
-    log('play() ✓','ok');
+    log('Playback started ✓','ok');
 
     setTimeout(()=>{
+      if(video.paused) {
+        log('Auto-play blocked, please tap play','warn');
+      }
       video.muted=false; video.volume=1;
       if(video.muted) document.getElementById('unmute-btn').style.display='block';
-    }, 500);
+    }, 1000);
 
   } catch(err) {
-    log(`Load failed: code=${err.code||'?'} — ${err.message||''}`, 'err');
+    log(`Load failed: ${err.message||err.code}`, 'err');
+    console.error('Load error:', err);
   }
 }
 
