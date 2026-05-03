@@ -1,731 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-    <title>ICC Player | Premium Live</title>
-
+  <title>ICC Player | Premium Live</title>
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
-  
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{background:#000;width:100%;height:100%;font-family:system-ui,sans-serif;overflow:hidden}
+    .video-container{position:absolute;width:100%;height:100%;background:#000}
+    .shaka-video-container{position:absolute;width:100%;height:100%}
+    video{width:100%;height:100%;background:#000}
 
-  <style type="text/css">
-      body {position:absolute;
-        margin: 0;
-        padding: 0px;
-        background-color: #000000;
-        color: #fff;
-        font-family: Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        height:100%;width:100%
-      }
+    /* ── Error overlay ── */
+    #error-overlay{
+      display:none;position:absolute;inset:0;z-index:5000;
+      background:rgba(0,0,0,.85);backdrop-filter:blur(6px);
+      flex-direction:column;align-items:center;justify-content:center;gap:1rem;color:#fff;
+    }
+    #error-overlay.show{display:flex}
+    #error-overlay h2{font-size:1.2rem;color:#ef4444}
+    #error-overlay p{font-size:.85rem;color:#94a3b8;max-width:420px;text-align:center}
+    #retry-btn{
+      margin-top:.5rem;padding:.7rem 2rem;border-radius:50px;background:#3b82f6;
+      color:#fff;border:none;cursor:pointer;font-weight:700;font-size:1rem
+    }
+    #retry-btn:hover{background:#2563eb}
 
-      .video-container {
-        position: absolute ;
-        width: 100%;height:100%;
-        aspect-ratio: 16/9;
-        background-color: #000;
-        border-radius: 1px;
-        overflow: hidden;
-        box-shadow: 0 4px 2px rgba(0,0,0,0.5);
-      }
+    /* ── Loading overlay ── */
+    #loading-overlay{
+      display:flex;position:absolute;inset:0;z-index:4000;
+      background:#000;align-items:center;justify-content:center;
+    }
+    .spinner{width:52px;height:52px;border:5px solid #1e3a5f;border-top-color:#3b82f6;
+      border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-      .shaka-video-container {
-        position: absolute ;
-        width: 100%;height:100%;
-        
-        
-      }
+    /* ── Seek bar colours ── */
+    .shaka-played-range{background:rgb(59,130,246)!important}
+    .shaka-buffered-range{background:rgba(255,255,255,.4)!important}
+    .shaka-seek-bar{background:rgba(255,255,255,.2)!important}
 
-      video {
-        width: 100%;
-        height: 100%;
-        background-color: #000;
-        
-      }
+    /* Hide Shaka's own spinner */
+    .shaka-spinner-container,.shaka-spinner,.shaka-spinner-svg{
+      display:none!important;visibility:hidden!important;opacity:0!important}
 
-      .video-watermark {
-        position: absolute;
-        top: 15px;
-        left: 15px;
-        width: 80px;
-        height: 10px;
-        opacity: 0.7;
-        z-index: 1000;
-        pointer-events: none;
-      }
-
-      @media (max-width: 768px) {
-        body {width:100%;height:100%
-          padding: 1px;
-        }
-        
-        .video-container {
-          max-width: 100%;height:100%
-        }
-        
-        .video-watermark {
-          width: 30px;
-          height: 30px;
-          top: 10px;
-          left: 10px;
-        }
-      }
-
-      @media (min-width: 769px) and (max-width: 1024px) {
-        .video-container {
-          max-width: 854px;
-        }
-      }
-  
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      background: #000;
-      
-      font-family: system-ui, -apple-system, sans-serif;
+    /* ── WhatsApp popup ── */
+    .wa-popup{
+      display:none;position:fixed;inset:0;z-index:10000;
+      align-items:center;justify-content:center;
     }
-
-
-    /* YouTube Theme CSS */
-    @font-face {
-      font-family: 'Roboto';
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Me5Q.ttf) format('truetype');
+    .wa-popup.show{display:flex}
+    .wa-card{
+      background:rgba(255,255,255,.97);backdrop-filter:blur(20px);
+      border-radius:20px;padding:2.5rem 2rem;width:90%;max-width:400px;
+      text-align:center;box-shadow:0 25px 50px rgba(0,0,0,.3);
+      animation:popIn .4s cubic-bezier(.175,.885,.32,1.275) forwards
     }
-    @font-face {
-      font-family: 'Roboto';
-      font-style: normal;
-      font-weight: 500;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmEU9vAw.ttf) format('truetype');
+    @keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+    .wa-card h2{color:#1e293b;font-size:1.4rem;margin-bottom:.4rem}
+    .wa-card p{color:#64748b;font-size:.9rem;margin-bottom:1.2rem;line-height:1.6}
+    .wa-btn{
+      display:block;width:100%;padding:.9rem;border-radius:12px;
+      font-weight:700;font-size:1rem;cursor:pointer;border:none;
+      text-decoration:none;margin-top:.6rem;transition:transform .2s
     }
-    .youtube-theme {
-      font-family: 'Roboto', sans-serif;
-    }
-    .youtube-theme .shaka-bottom-controls {
-      width: 100%;
-      padding: 0;
-      padding-bottom: 0;
-      z-index: 1;
-    }
-    .youtube-theme .shaka-bottom-controls {
-      display: -webkit-box;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-orient: vertical;
-      -webkit-box-direction: normal;
-          -ms-flex-direction: column;
-              flex-direction: column;
-    }
-    .youtube-theme .shaka-ad-controls {
-      -webkit-box-ordinal-group: 2;
-          -ms-flex-order: 1;
-              order: 1;
-    }
-    .youtube-theme .shaka-controls-button-panel {
-      -webkit-box-ordinal-group: 3;
-          -ms-flex-order: 2;
-              order: 2;
-      height: 60px;
-      padding: 0 10px;
-    }
-    .youtube-theme .shaka-range-container {
-      margin: 4px 10px 4px 10px;
-      top: 0;
-    }
-    .youtube-theme .shaka-small-play-button {
-      -webkit-box-ordinal-group: -2;
-          -ms-flex-order: -3;
-              order: -3;
-    }
-    .youtube-theme .shaka-mute-button {
-      -webkit-box-ordinal-group: -1;
-          -ms-flex-order: -2;
-              order: -2;
-    }
-    .youtube-theme .shaka-controls-button-panel > * {
-      margin: 0;
-      padding: 3px 8px;
-      color: #EEE;
-      height: 60px;
-    }
-    .youtube-theme .shaka-controls-button-panel > *:focus {
-      outline: none;
-      -webkit-box-shadow: inset 0 0 0 2px rgba(27, 127, 204, 0.8);
-              box-shadow: inset 0 0 0 2px rgba(27, 127, 204, 0.8);
-      color: #FFF;
-    }
-    .youtube-theme .shaka-controls-button-panel > *:hover {
-      color: #FFF;
-    }
-    .youtube-theme .shaka-controls-button-panel .shaka-volume-bar-container {
-      position: relative;
-      z-index: 10;
-      left: -1px;
-      -webkit-box-ordinal-group: 0;
-          -ms-flex-order: -1;
-              order: -1;
-      opacity: 0;
-      width: 0px;
-      -webkit-transition: width 0.2s cubic-bezier(0.4, 0, 1, 1);
-      height: 3px;
-      transition: width 0.2s cubic-bezier(0.4, 0, 1, 1);
-      padding: 0;
-    }
-    .youtube-theme .shaka-controls-button-panel .shaka-volume-bar-container:hover,
-    .youtube-theme .shaka-controls-button-panel .shaka-volume-bar-container:focus {
-      display: block;
-      width: 50px;
-      opacity: 1;
-      padding: 0 6px;
-    }
-    .youtube-theme .shaka-mute-button:hover + div {
-      opacity: 1;
-      width: 50px;
-      padding: 0 6px;
-    }
-    .youtube-theme .shaka-current-time {
-      padding: 0 10px;
-      font-size: 12px;
-    }
-    .youtube-theme .shaka-seek-bar-container {
-      height: 3px;
-      position: relative;
-      top: -1px;
-      border-radius: 0;
-      margin-bottom: 0;
-    }
-    .youtube-theme .shaka-seek-bar-container .shaka-range-element {
-      opacity: 0;
-    }
-    .youtube-theme .shaka-seek-bar-container:hover {
-      height: 5px;
-      top: 0;
-      cursor: pointer;
-    }
-    .youtube-theme .shaka-seek-bar-container:hover .shaka-range-element {
-      opacity: 1;
-      cursor: pointer;
-    }
-    .youtube-theme .shaka-seek-bar-container input[type=range]::-webkit-slider-thumb {
-      background: #FF0000;
-      cursor: pointer;
-    }
-    .youtube-theme .shaka-seek-bar-container input[type=range]::-moz-range-thumb {
-      background: #FF0000;
-      cursor: pointer;
-    }
-    .youtube-theme .shaka-seek-bar-container input[type=range]::-ms-thumb {
-      background: #FF0000;
-      cursor: pointer;
-    }
-    .youtube-theme .shaka-video-container * {
-      font-family: 'Roboto', sans-serif;
-    }
-    .youtube-theme .shaka-video-container .material-icons-round {
-      font-family: 'Material Icons Sharp';
-    }
-    .youtube-theme .shaka-overflow-menu,
-    .youtube-theme .shaka-settings-menu {
-      border-radius: 2px;
-      background: rgba(28, 28, 28, 0.9);
-      text-shadow: 0 0 2px rgb(0 0 0%);
-      -webkit-transition: opacity 0.1s cubic-bezier(0, 0, 0.2, 1);
-      transition: opacity 0.1s cubic-bezier(0, 0, 0.2, 1);
-      -moz-user-select: none;
-      -ms-user-select: none;
-      -webkit-user-select: none;
-      right: 10px;
-      bottom: 50px;
-      padding: 8px 0;
-      min-width: 200px;
-    }
-    .youtube-theme .shaka-settings-menu {
-      padding: 0 0 8px 0;
-    }
-    .youtube-theme .shaka-settings-menu button {
-      font-size: 12px;
-    }
-    .youtube-theme .shaka-settings-menu button span {
-      margin-left: 33px;
-      font-size: 13px;
-    }
-    .youtube-theme .shaka-settings-menu button[aria-selected="true"] {
-      display: -webkit-box;
-      display: -ms-flexbox;
-      display: flex;
-    }
-    .youtube-theme .shaka-settings-menu button[aria-selected="true"] span {
-      -webkit-box-ordinal-group: 3;
-          -ms-flex-order: 2;
-              order: 2;
-      margin-left: 0;
-    }
-    .youtube-theme .shaka-settings-menu button[aria-selected="true"] i {
-      -webkit-box-ordinal-group: 2;
-          -ms-flex-order: 1;
-              order: 1;
-      font-size: 18px;
-      padding-left: 5px;
-    }
-    .youtube-theme .shaka-overflow-menu button {
-      padding: 0;
-    }
-    .youtube-theme .shaka-overflow-menu button i {
-      display: none;
-    }
-    .youtube-theme .shaka-overflow-menu button .shaka-overflow-button-label {
-      display: -webkit-box;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-pack: justify;
-          -ms-flex-pack: justify;
-              justify-content: space-between;
-      -webkit-box-orient: horizontal;
-      -webkit-box-direction: normal;
-          -ms-flex-direction: row;
-              flex-direction: row;
-      -webkit-box-align: center;
-          -ms-flex-align: center;
-              align-items: center;
-      cursor: default;
-      outline: none;
-      height: 60px;
-      -webkit-box-flex: 0;
-          -ms-flex: 0 0 100%;
-              flex: 0 0 100%;
-    }
-    .youtube-theme .shaka-overflow-menu button .shaka-overflow-button-label span {
-      -ms-flex-negative: initial;
-          flex-shrink: initial;
-      padding-left: 15px;
-      font-size: 13px;
-      font-weight: 500;
-      display: -webkit-box;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-align: center;
-          -ms-flex-align: center;
-              align-items: center;
-    }
-    .youtube-theme .shaka-overflow-menu span + span {
-      color: #FFF;
-      font-weight: 400 !important;
-      font-size: 12px !important;
-      padding-right: 8px;
-      padding-left: 0 !important;
-    }
-    .youtube-theme .shaka-overflow-menu span + span:after {
-      content: "navigate_next";
-      font-family: 'Material Icons Sharp';
-      font-size: 20px;
-    }
-    .youtube-theme .shaka-overflow-menu .shaka-pip-button span + span {
-      padding-right: 15px !important;
-    }
-    .youtube-theme .shaka-overflow-menu .shaka-pip-button span + span:after {
-      content: "";
-    }
-    .youtube-theme .shaka-back-to-overflow-button {
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-      font-size: 12px;
-      color: #eee;
-      height: 60px;
-    }
-    .youtube-theme .shaka-back-to-overflow-button .material-icons-round {
-      font-size: 15px;
-      padding-right: 10px;
-    }
-    .youtube-theme .shaka-back-to-overflow-button span {
-      margin-left: 3px !important;
-    }
-    .youtube-theme .shaka-overflow-menu button:hover,
-    .youtube-theme .shaka-settings-menu button:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      cursor: pointer;
-    }
-    .youtube-theme .shaka-overflow-menu button:hover label,
-    .youtube-theme .shaka-settings-menu button:hover label {
-      cursor: pointer;
-    }
-    .youtube-theme .shaka-overflow-menu button:focus,
-    .youtube-theme .shaka-settings-menu button:focus {
-      background-color: rgba(255, 255, 255, 0.1);
-      border: none;
-      outline: none;
-    }
-    .youtube-theme .shaka-overflow-menu button,
-    .youtube-theme .shaka-settings-menu button {
-      color: #EEE;
-    }
-    .youtube-theme .shaka-captions-off {
-      color: #BFBFBF;
-    }
-    .youtube-theme .shaka-overflow-menu-button {
-      font-size: 18px;
-      margin-right: 5px;
-    }
-    .youtube-theme .shaka-fullscreen-button:hover {
-      font-size: 25px;
-      -webkit-transition: font-size 0.1s cubic-bezier(0, 0, 0.2, 1);
-      transition: font-size 0.1s cubic-bezier(0, 0, 0.2, 1);
-    }
-
-    /* Hide center loading spinner */
-    .shaka-spinner-container,
-    .shaka-spinner,
-    .shaka-spinner-svg {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-    }
-
-    /* Custom Seek Bar Colors */
-    .youtube-theme .shaka-seek-bar {
-      background: rgba(255,255,255,.2) !important;
-    }
-    
-    .youtube-theme .shaka-buffered-range {
-      background: rgba(255,255,255,.4) !important;
-    }
-    
-    .youtube-theme .shaka-played-range {
-      background: rgb(59, 130, 246) !important;
-    }
-
-    /* Manual play button styles */
-    .manual-play-button {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 20px 30px;
-      border-radius: 28px;
-      cursor: pointer;
-      font-size: 18px;
-      z-index: 2000;
-      border: 0px solid #ff0000;
-      display: none;
-      transition: all 0.3s ease;
-    }
-    
-    .manual-play-button:hover {
-      background: rgba(255, 0, 0, 0.8);
-      transform: translate(-50%, -50%) scale(1.05);
-    }#myLogo {width:60px;height:40px;
-  position: absolute;
-  right: 5px;
-  top: 10px;
-             }
-.whatsapp-popup {
-    position: fixed; 
-    top: 50%; 
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.95);
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(0,0,0,0.1);
-    padding: 2.5rem 2rem;
-    border-radius: 20px;
-    z-index: 10000;
-    text-align: center;
-    width: 90%; 
-    max-width: 400px;
-    display: none;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
-    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes popIn {
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-
-.whatsapp-popup h2 { 
-    color: #1e293b; 
-    font-size: 1.5rem; 
-    margin-bottom: 0.5rem; 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-}
-
-.whatsapp-popup .wa-icon { 
-    color: #25D366; 
-    font-size: 1.8rem;
-}
-
-.whatsapp-popup p { 
-    color: #64748b; 
-    font-size: 0.95rem; 
-    margin-bottom: 1.5rem; 
-    line-height: 1.6;
-}
-
-.whatsapp-popup .popup-button {
-    width: 100%;
-    padding: 1rem;
-    margin-top: 0.75rem;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 1rem;
-    text-decoration: none;
-    display: inline-block;
-    transition: transform 0.2s;
-    border: none;
-}
-
-.whatsapp-popup .join-btn {
-    background: #25D366;
-    color: white;
-    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
-    border: none;
-}
-
-.whatsapp-popup .join-btn:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4); 
-}
-
-.whatsapp-popup .joined-btn {
-    background: transparent;
-    color: #64748b;
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-.whatsapp-popup .joined-btn:hover { 
-    background: rgba(0,0,0,0.05); 
-    color: #1e293b; 
-}
-</style>
-
-
-  
+    .wa-btn:hover{transform:translateY(-2px)}
+    .join{background:#25D366;color:#fff;box-shadow:0 4px 15px rgba(37,211,102,.3)}
+    .skip{background:transparent;color:#64748b;border:1px solid rgba(0,0,0,.15)}
+  </style>
 </head>
-<div class="whatsapp-popup" id="whatsappPopup">
-    <h2><span class="wa-icon">📱</span> Join Our Channel</h2>
-    <p>Get instant updates, match highlights, and exclusive links on our official WhatsApp channel.</p>
-    <a href="https://whatsapp.com/channel/0029VbC2oQsC6ZvmwpR3v73v" target="_blank" rel="noopener noreferrer" class="popup-button join-btn">Follow on WhatsApp</a>
-    <button class="popup-button joined-btn" onclick="document.getElementById('whatsappPopup').style.display='none';">Already Following</button>
+<body>
+
+<!-- Loading -->
+<div id="loading-overlay"><div class="spinner"></div></div>
+
+<!-- Error -->
+<div id="error-overlay">
+  <h2>⚠️ Stream Error</h2>
+  <p id="error-msg">Could not load the stream.</p>
+  <button id="retry-btn">↺ Retry</button>
 </div>
 
+<!-- Player -->
 <div class="video-container">
+  <div class="shaka-video-container" id="shaka-container">
+    <video id="video" autoplay muted playsinline preload="auto"></video>
+  </div>
+</div>
 
-<div class="shaka-video-container" id="shaka-container">
-  <video id="video" autoplay muted playsinline preload="auto"></video>
-  
-
-</div></div>
-
-
+<!-- WhatsApp popup -->
+<div class="wa-popup" id="waPopup">
+  <div class="wa-card">
+    <h2>📱 Join Our Channel</h2>
+    <p>Get instant updates, match highlights, and exclusive links on our official WhatsApp channel.</p>
+    <a href="https://whatsapp.com/channel/0029VbC2oQsC6ZvmwpR3v73v"
+       target="_blank" rel="noopener" class="wa-btn join">Follow on WhatsApp</a>
+    <button class="wa-btn skip"
+            onclick="document.getElementById('waPopup').classList.remove('show')">
+      Already Following
+    </button>
+  </div>
+</div>
 
 <script>
+  const PROXY_BASE = '/api/proxy?u=';
+  const video      = document.getElementById('video');
+  let   player;
 
-    let player;
-    const video = document.getElementById('video');
-    const PROXY_BASE = '/api/proxy?u=';
+  // ── base64url → hex ──────────────────────────────────────────────────────
+  function b64ToHex(b64url) {
+    let b64 = b64url.replace(/-/g,'+').replace(/_/g,'/');
+    while (b64.length % 4) b64 += '=';
+    const raw = atob(b64);
+    return Array.from(raw).map(c => c.charCodeAt(0).toString(16).padStart(2,'0')).join('');
+  }
 
-    // Helper to convert base64url to hex string (with padding support)
-    function base64ToHex(base64url) {
-      let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-      while (base64.length % 4) base64 += '=';
-      const raw = atob(base64);
-      let result = '';
-      for (let i = 0; i < raw.length; i++) {
-        const hex = raw.charCodeAt(i).toString(16);
-        result += (hex.length === 2 ? hex : '0' + hex);
-      }
-      return result;
-    }
+  // ── UI helpers ───────────────────────────────────────────────────────────
+  function showError(msg) {
+    document.getElementById('loading-overlay').style.display = 'none';
+    const el = document.getElementById('error-overlay');
+    document.getElementById('error-msg').textContent = msg;
+    el.classList.add('show');
+  }
+  function hideError() {
+    document.getElementById('error-overlay').classList.remove('show');
+  }
+  function hideLoading() {
+    document.getElementById('loading-overlay').style.display = 'none';
+  }
 
-    async function initializePlayer() {
+  // ── Main ─────────────────────────────────────────────────────────────────
+  async function initPlayer() {
+    hideError();
+    document.getElementById('loading-overlay').style.display = 'flex';
+
+    const params     = new URLSearchParams(location.search);
+    const streamUrl  = params.get('url');
+    const jwkKeys    = params.get('keys');
+    const hexKeys    = params.get('hexKeys');
+    // Optional: caller can pass ?headers=<JSON-encoded array from icc.json>
+    const rawHeaders = params.get('headers');
+
+    if (!streamUrl) { showError('No stream URL provided.'); return; }
+
+    // Destroy previous instance
+    if (player) { try { await player.destroy(); } catch(_){} }
+
+    player = new shaka.Player();
+    await player.attach(video);
+
+    player.addEventListener('error', e => {
+      console.error('Shaka error:', e.detail);
+      showError(`Shaka error ${e.detail.code}: ${e.detail.message || 'stream failed'}`);
+    });
+
+    // ── Build UI ─────────────────────────────────────────────────────────
+    const ui = new shaka.ui.Overlay(
+      player,
+      document.querySelector('.shaka-video-container'),
+      video
+    );
+    ui.configure({
+      seekBarColors: {
+        base:     'rgba(255,255,255,.2)',
+        buffered: 'rgba(255,255,255,.4)',
+        played:   'rgb(59,130,246)',
+      },
+      controlPanelElements: [
+        'play_pause','mute','volume','time_and_duration','spacer',
+        'quality','language','picture_in_picture','fullscreen','overflow_menu'
+      ]
+    });
+
+    // ── ClearKey ─────────────────────────────────────────────────────────
+    const clearKeys = {};
+    if (jwkKeys) {
       try {
-        const queryParams = new URLSearchParams(window.location.search);
-        const streamUrl = queryParams.get('url');
-        const jwkKeys = queryParams.get('keys');
-        const hexKeys = queryParams.get('hexKeys');
-
-        if (!streamUrl) {
-          console.error("No stream URL provided");
-          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-size:1.2rem;">No stream URL provided</div>';
-          return;
-        }
-
-        console.log("Stream URL:", streamUrl);
-
-        player = new shaka.Player();
-        await player.attach(video);
-
-        // Error listener
-        player.addEventListener('error', (event) => {
-          console.error('Shaka Error:', event.detail);
-        });
-
-        // UI Configuration
-        const container = document.querySelector('.shaka-video-container');
-        const ui = new shaka.ui.Overlay(player, container, video);
-        
-        const uiConfig = {
-          'seekBarColors': {
-            base: 'rgba(255,255,255,.2)',
-            buffered: 'rgba(255,255,255,.4)',
-            played: 'rgb(59, 130, 246)',
-          },
-          'controlPanelElements': [
-            'play_pause',
-            'mute',
-            'volume',
-            'time_and_duration',
-            'spacer',
-            'quality',
-            'language',
-            'picture_in_picture',
-            'fullscreen',
-            'overflow_menu'
-          ]
-        };
-        ui.configure(uiConfig);
-
-        // DRM Configuration (ClearKey)
-        const clearKeys = {};
-        
-        if (jwkKeys) {
-          try {
-            const parsedJwk = JSON.parse(jwkKeys);
-            const keysArray = parsedJwk.keys || (Array.isArray(parsedJwk) ? parsedJwk : []);
-            keysArray.forEach(keyObj => {
-              const kid = base64ToHex(keyObj.kid);
-              const key = base64ToHex(keyObj.k);
-              clearKeys[kid] = key;
-              console.log(`ClearKey KID: ${kid}, KEY: ${key}`);
-            });
-          } catch (e) {
-            console.error("Error parsing JWK keys:", e);
-          }
-        } else if (hexKeys) {
-          const pairs = decodeURIComponent(hexKeys).split(',');
-          pairs.forEach(pair => {
-            const [kid, key] = pair.split(':');
-            if (kid && key) {
-              clearKeys[kid.trim()] = key.trim();
-              console.log(`ClearKey HEX KID: ${kid.trim()}, KEY: ${key.trim()}`);
-            }
-          });
-        }
-
-        // Register network filters
-        const networkingEngine = player.getNetworkingEngine();
-
-        // Request Filter: Prepend proxy to all absolute URLs
-        networkingEngine.registerRequestFilter((type, request) => {
-          request.uris = request.uris.map(uri => {
-            if (uri.startsWith('http') && !uri.includes(location.origin) && !uri.includes('/api/proxy')) {
-              return PROXY_BASE + encodeURIComponent(uri);
-            }
-            return uri;
-          });
-        });
-
-        // Response Filter: Override response URI for manifests to maintain correct base URL
-        networkingEngine.registerResponseFilter((type, response) => {
-          if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST) {
-            // Extract the original target URL from the proxied URI
-            try {
-              const proxiedUri = response.uri;
-              if (proxiedUri.includes('u=')) {
-                const urlObj = new URL(proxiedUri, location.href);
-                const originalUrl = urlObj.searchParams.get('u');
-                if (originalUrl) {
-                  console.log("Restoring original manifest URI for base resolution:", originalUrl);
-                  response.uri = originalUrl;
-                }
-              }
-            } catch (e) {
-              // Fallback to streamUrl if parsing fails
-              response.uri = streamUrl;
-            }
-          }
-        });
-
-        // Apply player configurations
-        const hasClearKeys = Object.keys(clearKeys).length > 0;
-        const playerConfig = {
-          streaming: {
-            bufferingGoal: 20,
-            rebufferingGoal: 5,
-            bufferBehind: 30,
-            retryParameters: {
-              timeout: 30000,
-              maxAttempts: 5,
-              baseDelay: 1000,
-              backoffFactor: 2,
-              fuzzFactor: 0.5
-            }
-          },
-          manifest: {
-            retryParameters: {
-              timeout: 30000,
-              maxAttempts: 5,
-              baseDelay: 1000,
-              backoffFactor: 2,
-              fuzzFactor: 0.5
-            }
-          }
-        };
-
-        if (hasClearKeys) {
-          playerConfig.drm = { clearKeys: clearKeys };
-          console.log("ClearKey DRM configured:", clearKeys);
-        }
-
-        player.configure(playerConfig);
-
-        // Load the manifest — proxy the initial manifest URL
-        const manifestUrl = PROXY_BASE + encodeURIComponent(streamUrl);
-        console.log("Loading manifest via proxy:", manifestUrl);
-        
-        await player.load(manifestUrl);
-        console.log("Stream loaded successfully!");
-
-        // Autoplay handling
-        video.muted = true;
-        try {
-          await video.play();
-          console.log("Autoplay (muted) successful");
-          // Try unmuting after a short delay
-          setTimeout(() => {
-            video.muted = false;
-            console.log("Audio unmuted");
-          }, 500);
-        } catch (playError) {
-          console.log("Autoplay failed, waiting for user interaction:", playError);
-        }
-
-      } catch (error) {
-        console.error('Player initialization error:', error);
-        if (error.code) {
-          console.error('Shaka error code:', error.code, 'Category:', error.category);
-        }
-      }
+        const jwk = JSON.parse(jwkKeys);
+        const arr = jwk.keys || (Array.isArray(jwk) ? jwk : []);
+        arr.forEach(k => { clearKeys[b64ToHex(k.kid)] = b64ToHex(k.k); });
+      } catch(e) { console.warn('JWK parse error:', e); }
+    } else if (hexKeys) {
+      decodeURIComponent(hexKeys).split(',').forEach(pair => {
+        const [kid, key] = pair.split(':');
+        if (kid && key) clearKeys[kid.trim()] = key.trim();
+      });
     }
 
-    // Initialize when DOM is ready
-    document.addEventListener('DOMContentLoaded', () => {
-      initializePlayer().catch(error => {
-        console.error('Fatal player error:', error);
+    // ── Network filters ───────────────────────────────────────────────────
+    const net = player.getNetworkingEngine();
+
+    // Build extra headers to forward (from ?headers= param or defaults)
+    const fwdHeaders = {};
+    if (rawHeaders) {
+      try {
+        JSON.parse(decodeURIComponent(rawHeaders)).forEach(h => {
+          const i = h.indexOf(': ');
+          if (i > -1) fwdHeaders[h.substring(0,i)] = h.substring(i+2);
+        });
+      } catch(_) {}
+    }
+    // Always ensure sensible defaults
+    if (!fwdHeaders['User-Agent'])
+      fwdHeaders['User-Agent'] =
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0';
+    if (!fwdHeaders['Referer']) fwdHeaders['Referer'] = 'https://www.icc-cricket.com/';
+    if (!fwdHeaders['Origin'])  fwdHeaders['Origin']  = 'https://www.icc-cricket.com';
+
+    // Request filter — proxy every outbound URL + attach headers as query param
+    net.registerRequestFilter((type, req) => {
+      req.uris = req.uris.map(uri => {
+        if (uri.startsWith('http') &&
+            !uri.includes(location.origin) &&
+            !uri.includes('/api/proxy')) {
+          const headersParam = encodeURIComponent(JSON.stringify(Object.entries(fwdHeaders)
+            .map(([k,v]) => `${k}: ${v}`)));
+          return `${PROXY_BASE}${encodeURIComponent(uri)}&headers=${headersParam}`;
+        }
+        return uri;
       });
     });
 
-    // Show popup after delay
-    setTimeout(() => { 
-      document.getElementById('whatsappPopup').style.display = 'block'; 
-    }, 3000);
+    // Response filter — restore original URI so DASH segment resolution works
+    net.registerResponseFilter((type, resp) => {
+      if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST) {
+        try {
+          const u = new URL(resp.uri, location.href);
+          const orig = u.searchParams.get('u');
+          if (orig) resp.uri = orig;
+        } catch(_) { resp.uri = streamUrl; }
+      }
+    });
+
+    // ── Player config ────────────────────────────────────────────────────
+    const cfg = {
+      streaming: {
+        bufferingGoal: 20, rebufferingGoal: 5, bufferBehind: 30,
+        retryParameters: { timeout:30000, maxAttempts:5, baseDelay:1000, backoffFactor:2, fuzzFactor:.5 }
+      },
+      manifest: {
+        retryParameters: { timeout:30000, maxAttempts:5, baseDelay:1000, backoffFactor:2, fuzzFactor:.5 }
+      }
+    };
+    if (Object.keys(clearKeys).length) {
+      cfg.drm = { clearKeys };
+      console.log('ClearKey DRM:', clearKeys);
+    }
+    player.configure(cfg);
+
+    // ── Load ─────────────────────────────────────────────────────────────
+    try {
+      const manifestUrl = `${PROXY_BASE}${encodeURIComponent(streamUrl)}` +
+        `&headers=${encodeURIComponent(JSON.stringify(Object.entries(fwdHeaders).map(([k,v])=>`${k}: ${v}`)))}`;
+      await player.load(manifestUrl);
+      hideLoading();
+      console.log('Stream loaded ✓');
+
+      video.muted = true;
+      await video.play().catch(()=>{});
+      setTimeout(() => { video.muted = false; }, 600);
+
+    } catch(err) {
+      console.error('Load error:', err);
+      showError(`Failed to load stream (code ${err.code || '?'}). The token may have expired or the stream is geo-blocked.`);
+    }
+  }
+
+  document.getElementById('retry-btn').addEventListener('click', initPlayer);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initPlayer().catch(e => showError(e.message));
+  });
+
+  // WhatsApp popup after 5 s
+  setTimeout(() => document.getElementById('waPopup').classList.add('show'), 5000);
 </script>
+</body>
+</html>
