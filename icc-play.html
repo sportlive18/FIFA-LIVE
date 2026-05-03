@@ -14,21 +14,19 @@
     .shaka-video-container{position:absolute;width:100%;height:100%}
     video{width:100%;height:100%;background:#000}
 
-    /* Status bar — shown until canplay fires */
     #status{
       position:absolute;top:0;left:0;right:0;z-index:6000;
       background:rgba(0,0,0,.85);color:#94a3b8;font-size:12px;
-      padding:8px 12px;line-height:1.8;display:block;
-      max-height:50vh;overflow-y:auto;
+      padding:8px 12px;line-height:1.8;max-height:50vh;overflow-y:auto;
     }
     #status.hidden{display:none}
-    #status .ok  {color:#4ade80}
-    #status .err {color:#f87171}
-    #status .inf {color:#60a5fa}
+    #status .ok {color:#4ade80}
+    #status .err{color:#f87171}
+    #status .inf{color:#60a5fa}
 
     #unmute-btn{
       display:none;position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
-      z-index:3000;background:rgba(0,0,0,.75);color:#fff;
+      z-index:3000;background:rgba(0,0,0,.8);color:#fff;
       border:2px solid rgba(255,255,255,.4);padding:.6rem 1.6rem;
       border-radius:50px;cursor:pointer;font-size:1rem;font-weight:700
     }
@@ -51,17 +49,17 @@
 </div>
 
 <script>
-const PROXY  = '/api/proxy?u=';
-const video  = document.getElementById('video');
-const status = document.getElementById('status');
-let   player;
+const PROXY = '/api/proxy?u=';
+const video = document.getElementById('video');
+const statusEl = document.getElementById('status');
+let player;
 
 function log(msg, cls='inf') {
-  const s = document.createElement('div');
-  s.className = cls;
-  s.textContent = msg;
-  status.appendChild(s);
-  status.scrollTop = status.scrollHeight;
+  const d = document.createElement('div');
+  d.className = cls;
+  d.textContent = msg;
+  statusEl.appendChild(d);
+  statusEl.scrollTop = statusEl.scrollHeight;
   console.log(msg);
 }
 
@@ -72,93 +70,66 @@ function b64ToHex(s) {
 }
 
 async function init() {
-  const p      = new URLSearchParams(location.search);
-  const url    = p.get('url');
-  const jwk    = p.get('keys');
-  const hex    = p.get('hexKeys');
-  const hdrs   = p.get('headers');
+  const p   = new URLSearchParams(location.search);
+  const url = p.get('url');
+  const jwk = p.get('keys');
+  const hex = p.get('hexKeys');
+  const hdr = p.get('headers');
 
   if (!url) { log('❌ No ?url= param','err'); return; }
-  log('URL: ' + url.substring(0,80)+'…');
+  log('Stream: ' + url.substring(0,80)+'…');
 
-  // ── Build headers ──────────────────────────────────────────────────
+  // ── Headers ──────────────────────────────────────────────────────
   const fwd = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0',
     'Referer':    'https://www.icc-cricket.com/',
     'Origin':     'https://www.icc-cricket.com'
   };
-  if (hdrs) {
-    try {
-      JSON.parse(decodeURIComponent(hdrs)).forEach(h=>{
-        const i=h.indexOf(': ');
-        if(i>-1) fwd[h.slice(0,i)]=h.slice(i+2);
-      });
-    } catch(e){ log('Header parse error: '+e.message,'err'); }
+  if (hdr) {
+    try { JSON.parse(decodeURIComponent(hdr)).forEach(h=>{const i=h.indexOf(': ');if(i>-1)fwd[h.slice(0,i)]=h.slice(i+2);}); }
+    catch(e){ log('Header parse err: '+e,'err'); }
   }
   const hParam = encodeURIComponent(JSON.stringify(Object.entries(fwd).map(([k,v])=>`${k}: ${v}`)));
 
-  // ── Test proxy reachability first ──────────────────────────────────
-  const testUrl = PROXY + encodeURIComponent(url) + '&headers=' + hParam;
-  log('Testing proxy: ' + testUrl.substring(0,100)+'…');
-  try {
-    const r = await fetch(testUrl, {method:'HEAD'});
-    log(`Proxy responded: HTTP ${r.status} (${r.headers.get('content-type')||'?'})`,
-        r.ok ? 'ok' : 'err');
-    if (!r.ok) {
-      log('Proxy/CDN error — stream may be geo-blocked or token expired','err');
-    }
-  } catch(e) {
-    log('Proxy fetch failed: '+e.message,'err');
-    return;
-  }
-
-  // ── ClearKey ───────────────────────────────────────────────────────
+  // ── ClearKey ─────────────────────────────────────────────────────
   const clearKeys = {};
   if (jwk) {
     try {
-      const obj = JSON.parse(jwk);
-      const arr = obj.keys||(Array.isArray(obj)?obj:[]);
-      arr.forEach(k=>{ clearKeys[b64ToHex(k.kid)]=b64ToHex(k.k); });
+      const obj=JSON.parse(jwk), arr=obj.keys||(Array.isArray(obj)?obj:[]);
+      arr.forEach(k=>{clearKeys[b64ToHex(k.kid)]=b64ToHex(k.k);});
       log('ClearKey (JWK): '+JSON.stringify(clearKeys),'ok');
-    } catch(e){ log('JWK parse error: '+e.message,'err'); }
+    } catch(e){ log('JWK err: '+e,'err'); }
   } else if (hex) {
-    decodeURIComponent(hex).split(',').forEach(pr=>{
-      const [k,v]=pr.split(':');
-      if(k&&v){ clearKeys[k.trim()]=v.trim(); }
-    });
+    decodeURIComponent(hex).split(',').forEach(pr=>{const[k,v]=pr.split(':');if(k&&v)clearKeys[k.trim()]=v.trim();});
     log('ClearKey (hex): '+JSON.stringify(clearKeys),'ok');
-  } else {
-    log('No DRM keys provided — stream may be unencrypted or fail','err');
   }
 
-  // ── Destroy old ────────────────────────────────────────────────────
-  if (player) { try { await player.destroy(); } catch(_){} player=null; }
+  if (player) { try{await player.destroy();}catch(_){} player=null; }
 
-  // ── Create player ──────────────────────────────────────────────────
   player = new shaka.Player(video);
-  log('Shaka player created','ok');
+  log('Player created','ok');
 
   player.addEventListener('error', e => {
-    log(`Shaka error code=${e.detail.code} cat=${e.detail.category}: ${e.detail.message||''}`, 'err');
+    log(`Shaka error ${e.detail.code}: ${e.detail.message||''}`, 'err');
   });
 
-  // Hide status bar on first video frame
   video.addEventListener('canplay', ()=>{
-    log('▶ canplay — hiding status','ok');
-    setTimeout(()=>status.classList.add('hidden'), 1500);
+    log('▶ canplay fired — video is rendering!','ok');
+    setTimeout(()=>statusEl.classList.add('hidden'), 2000);
   }, {once:true});
 
-  // ── UI ─────────────────────────────────────────────────────────────
-  const ui = new shaka.ui.Overlay(player, document.getElementById('shaka-container'), video);
-  ui.configure({
+  // Build UI
+  new shaka.ui.Overlay(player, document.getElementById('shaka-container'), video).configure({
     seekBarColors:{base:'rgba(255,255,255,.2)',buffered:'rgba(255,255,255,.4)',played:'rgb(59,130,246)'},
-    controlPanelElements:['play_pause','mute','volume','time_and_duration','spacer',
-      'quality','language','picture_in_picture','fullscreen','overflow_menu']
+    controlPanelElements:['play_pause','mute','volume','time_and_duration','spacer','quality','language','picture_in_picture','fullscreen','overflow_menu']
   });
 
-  // ── Network filters ────────────────────────────────────────────────
+  // ── Network filters ───────────────────────────────────────────────
   const net = player.getNetworkingEngine();
+  const MANIFEST = shaka.net.NetworkingEngine.RequestType.MANIFEST;
+  const SEGMENT  = shaka.net.NetworkingEngine.RequestType.SEGMENT;
 
+  // Route ALL external requests through proxy
   net.registerRequestFilter((type, req) => {
     req.uris = req.uris.map(uri => {
       if (uri.startsWith('http') && !uri.includes(location.origin) && !uri.includes('/api/proxy')) {
@@ -168,46 +139,51 @@ async function init() {
     });
   });
 
+  // ONLY fix manifest URI — do NOT touch segment URIs
+  // Shaka uses resp.uri to resolve relative segment paths in the MPD.
+  // If we restore it on segments too, segments go direct to CDN and get blocked.
   net.registerResponseFilter((type, resp) => {
-    if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST) {
+    if (type === MANIFEST) {
       try {
         const orig = new URL(resp.uri, location.href).searchParams.get('u');
-        if (orig) { resp.uri = orig; log('Manifest URI restored: '+orig.substring(0,60)+'…','ok'); }
+        if (orig) {
+          resp.uri = orig;
+          log('Manifest URI restored ✓','ok');
+        }
       } catch(_) { resp.uri = url; }
     }
+    // For SEGMENT and everything else: leave resp.uri alone
   });
 
-  // ── Config ─────────────────────────────────────────────────────────
+  // ── Config ────────────────────────────────────────────────────────
   const cfg = {
     streaming:{ bufferingGoal:20, rebufferingGoal:5, bufferBehind:30,
       retryParameters:{timeout:30000,maxAttempts:5,baseDelay:1000,backoffFactor:2,fuzzFactor:.5} },
-    manifest:{
-      retryParameters:{timeout:30000,maxAttempts:5,baseDelay:1000,backoffFactor:2,fuzzFactor:.5} }
+    manifest:{ retryParameters:{timeout:30000,maxAttempts:5,baseDelay:1000,backoffFactor:2,fuzzFactor:.5} }
   };
   if (Object.keys(clearKeys).length) { cfg.drm={clearKeys}; }
   player.configure(cfg);
 
-  // ── Load ───────────────────────────────────────────────────────────
+  // ── Load ──────────────────────────────────────────────────────────
   try {
     log('Loading manifest…');
     await player.load(PROXY + encodeURIComponent(url) + '&headers=' + hParam);
-    log('player.load() resolved ✓','ok');
+    log('load() resolved ✓','ok');
 
     await video.play();
-    log('video.play() resolved ✓','ok');
+    log('play() called','ok');
 
     setTimeout(()=>{
-      video.muted  = false;
-      video.volume = 1;
-      if (video.muted) document.getElementById('unmute-btn').style.display='block';
+      video.muted=false; video.volume=1;
+      if(video.muted) document.getElementById('unmute-btn').style.display='block';
     }, 500);
 
   } catch(err) {
-    log(`Load failed: code=${err.code||'?'} ${err.message||''}`, 'err');
+    log(`Load failed — code=${err.code||'?'} ${err.message||''}`, 'err');
   }
 }
 
-document.addEventListener('DOMContentLoaded', ()=>init().catch(e=>console.error(e)));
+document.addEventListener('DOMContentLoaded', ()=>init().catch(e=>log('Fatal: '+e.message,'err')));
 </script>
 </body>
 </html>
