@@ -1,470 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ICC LIVE HUB | Sportlink</title>
-  <!-- Tailwind + Font Awesome + Google Fonts -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --primary: #3b82f6;
-      --primary-glow: rgba(59, 130, 246, 0.5);
-      --accent: #f59e0b;
-      --bg-dark: #050810;
-      --card-bg: rgba(15, 23, 42, 0.7);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background: var(--bg-dark);
-      font-family: 'Outfit', sans-serif;
-      color: var(--text-main);
-      min-height: 100vh;
-      overflow-x: hidden;
-      background-image:
-        radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
-    }
-
-    /* Dynamic Background Animation */
-    .bg-glow {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      overflow: hidden;
-    }
-
-    .glow-sphere {
-      position: absolute;
-      width: 600px;
-      height: 600px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-      filter: blur(80px);
-      animation: float 20s infinite alternate ease-in-out;
-    }
-
-    @keyframes float {
-      0% {
-        transform: translate(-10%, -10%) scale(1);
-      }
-
-      100% {
-        transform: translate(20%, 20%) scale(1.2);
-      }
-    }
-
-    .container-custom {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem 5rem;
-    }
-
-    /* Header Styling */
-    .premium-header {
-      text-align: center;
-      margin-bottom: 4rem;
-      position: relative;
-    }
-
-    .logo-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 1rem;
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(12px);
-      padding: 0.8rem 2.5rem;
-      border-radius: 100px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-      animation: fadeInDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-
-    .logo-text {
-      font-size: 2.5rem;
-      font-weight: 900;
-      letter-spacing: -1px;
-      background: linear-gradient(135deg, #fff 30%, #3b82f6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    /* Section Tabs */
-    .section-tabs {
-      display: flex;
-      justify-content: center;
-      gap: 1.5rem;
-      margin-bottom: 3rem;
-    }
-
-    .tab-btn {
-      padding: 0.8rem 2rem;
-      border-radius: 50px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-muted);
-    }
-
-    .tab-btn.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-      box-shadow: 0 10px 20px var(--primary-glow);
-    }
-
-    /* Match Card */
-    .match-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border-radius: 2rem;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      overflow: hidden;
-      transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .match-card:hover {
-      transform: translateY(-10px) scale(1.02);
-      border-color: rgba(59, 130, 246, 0.4);
-      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 20px rgba(59, 130, 246, 0.1);
-    }
-
-    .card-image {
-      position: relative;
-      height: 200px;
-      overflow: hidden;
-    }
-
-    .card-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-
-    .match-card:hover .card-image img {
-      transform: scale(1.1);
-    }
-
-    .live-tag {
-      position: absolute;
-      top: 1rem;
-      left: 1rem;
-      background: #ef4444;
-      padding: 0.4rem 1rem;
-      border-radius: 50px;
-      font-size: 0.75rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
-      z-index: 10;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% {
-        transform: scale(1);
-        box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
-      }
-
-      50% {
-        transform: scale(1.05);
-        box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
-      }
-
-      100% {
-        transform: scale(1);
-        box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
-      }
-    }
-
-    .card-content {
-      padding: 1.5rem;
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .match-status {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--primary);
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-    }
-
-    .match-title {
-      font-size: 1.25rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      line-height: 1.3;
-    }
-
-    .match-meta {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
-
-    .watch-btn {
-      width: 100%;
-      padding: 1rem;
-      border-radius: 1rem;
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-      color: white;
-      font-weight: 700;
-      text-align: center;
-      transition: all 0.3s;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      margin-top: auto;
-    }
-
-    .watch-btn:hover {
-      transform: scale(1.02);
-      box-shadow: 0 15px 30px rgba(29, 78, 216, 0.4);
-      filter: brightness(1.1);
-    }
-
-    .watch-btn.upcoming {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-muted);
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
-    /* Loading Spinner */
-    .loader {
-      width: 48px;
-      height: 48px;
-      border: 5px solid #FFF;
-      border-bottom-color: var(--primary);
-      border-radius: 50%;
-      display: inline-block;
-      box-sizing: border-box;
-      animation: rotation 1s linear infinite;
-    }
-
-    @keyframes rotation {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
-    @keyframes fadeInDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .grid-item {
-      animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-
-    /* Footer Meta */
-    .footer-info {
-      margin-top: 5rem;
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.8rem;
-    }
+    :root{--primary:#3b82f6;--primary-glow:rgba(59,130,246,.5);--bg-dark:#050810;
+      --card-bg:rgba(15,23,42,.7);--text-main:#f8fafc;--text-muted:#94a3b8}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg-dark);font-family:'Outfit',sans-serif;color:var(--text-main);
+      min-height:100vh;overflow-x:hidden;
+      background-image:radial-gradient(circle at 20% 30%,rgba(59,130,246,.05) 0%,transparent 40%),
+        radial-gradient(circle at 80% 70%,rgba(59,130,246,.05) 0%,transparent 40%)}
+    .bg-glow{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;overflow:hidden}
+    .glow-sphere{position:absolute;width:600px;height:600px;border-radius:50%;
+      background:radial-gradient(circle,rgba(59,130,246,.1) 0%,transparent 70%);
+      filter:blur(80px);animation:float 20s infinite alternate ease-in-out}
+    @keyframes float{0%{transform:translate(-10%,-10%) scale(1)}100%{transform:translate(20%,20%) scale(1.2)}}
+    .container-custom{max-width:1400px;margin:0 auto;padding:2rem 1.5rem 5rem}
+    .premium-header{text-align:center;margin-bottom:4rem;position:relative}
+    .logo-badge{display:inline-flex;align-items:center;gap:1rem;background:rgba(255,255,255,.03);
+      backdrop-filter:blur(12px);padding:.8rem 2.5rem;border-radius:100px;
+      border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 40px rgba(0,0,0,.4);
+      animation:fadeInDown .8s cubic-bezier(.2,.8,.2,1)}
+    .logo-text{font-size:2.5rem;font-weight:900;letter-spacing:-1px;
+      background:linear-gradient(135deg,#fff 30%,#3b82f6);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .section-tabs{display:flex;justify-content:center;gap:1.5rem;margin-bottom:3rem;flex-wrap:wrap}
+    .tab-btn{padding:.8rem 2rem;border-radius:50px;font-weight:600;cursor:pointer;transition:all .3s;
+      border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:var(--text-muted)}
+    .tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);
+      box-shadow:0 10px 20px var(--primary-glow)}
+    .m3u-btn{padding:.8rem 2rem;border-radius:50px;font-weight:600;cursor:pointer;
+      transition:all .3s;border:1px solid rgba(34,197,94,.4);
+      background:rgba(34,197,94,.1);color:#4ade80;text-decoration:none;display:inline-flex;
+      align-items:center;gap:.5rem}
+    .m3u-btn:hover{background:rgba(34,197,94,.25);border-color:#4ade80;
+      box-shadow:0 10px 20px rgba(34,197,94,.2)}
+    .match-card{background:var(--card-bg);backdrop-filter:blur(16px);border-radius:2rem;
+      border:1px solid rgba(255,255,255,.05);overflow:hidden;transition:all .5s cubic-bezier(.2,.8,.2,1);
+      display:flex;flex-direction:column;height:100%}
+    .match-card:hover{transform:translateY(-10px) scale(1.02);border-color:rgba(59,130,246,.4);
+      box-shadow:0 30px 60px rgba(0,0,0,.6),0 0 20px rgba(59,130,246,.1)}
+    .card-image{position:relative;height:200px;overflow:hidden}
+    .card-image img{width:100%;height:100%;object-fit:cover;transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+    .match-card:hover .card-image img{transform:scale(1.1)}
+    .live-tag{position:absolute;top:1rem;left:1rem;background:#ef4444;padding:.4rem 1rem;
+      border-radius:50px;font-size:.75rem;font-weight:800;text-transform:uppercase;
+      display:flex;align-items:center;gap:.5rem;box-shadow:0 0 15px rgba(239,68,68,.6);
+      z-index:10;animation:pulse 2s infinite}
+    @keyframes pulse{0%{transform:scale(1);box-shadow:0 0 15px rgba(239,68,68,.6)}
+      50%{transform:scale(1.05);box-shadow:0 0 25px rgba(239,68,68,.8)}
+      100%{transform:scale(1);box-shadow:0 0 15px rgba(239,68,68,.6)}}
+    .blocked-tag{position:absolute;top:1rem;right:1rem;background:rgba(239,68,68,.2);
+      border:1px solid rgba(239,68,68,.5);padding:.3rem .8rem;border-radius:50px;
+      font-size:.65rem;font-weight:700;color:#fca5a5;z-index:10;letter-spacing:.05rem}
+    .card-content{padding:1.5rem;flex-grow:1;display:flex;flex-direction:column}
+    .match-status{font-size:.7rem;text-transform:uppercase;letter-spacing:2px;
+      color:var(--primary);font-weight:700;margin-bottom:.5rem}
+    .match-title{font-size:1.25rem;font-weight:800;margin-bottom:1rem;line-height:1.3}
+    .match-meta{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;
+      color:var(--text-muted);font-size:.85rem;flex-wrap:wrap}
+    .watch-btn{width:100%;padding:1rem;border-radius:1rem;
+      background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-weight:700;
+      text-align:center;transition:all .3s;cursor:pointer;display:flex;
+      align-items:center;justify-content:center;gap:.75rem;
+      border:1px solid rgba(255,255,255,.1);margin-top:auto}
+    .watch-btn:hover{transform:scale(1.02);box-shadow:0 15px 30px rgba(29,78,216,.4);filter:brightness(1.1)}
+    .watch-btn.upcoming{background:rgba(255,255,255,.05);color:var(--text-muted);
+      cursor:not-allowed;pointer-events:none}
+    .loader{width:48px;height:48px;border:5px solid #FFF;border-bottom-color:var(--primary);
+      border-radius:50%;display:inline-block;animation:rotation 1s linear infinite}
+    @keyframes rotation{100%{transform:rotate(360deg)}}
+    @keyframes fadeInDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .grid-item{animation:fadeInUp .6s cubic-bezier(.2,.8,.2,1) both}
+    .footer-info{margin-top:5rem;text-align:center;color:var(--text-muted);font-size:.8rem}
+    /* country badge */
+    .geo-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.65rem;
+      background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);
+      color:#fbbf24;padding:.2rem .6rem;border-radius:50px}
   </style>
 </head>
-
 <body>
 
-  <div class="bg-glow">
-    <div class="glow-sphere"></div>
+<div class="bg-glow"><div class="glow-sphere"></div></div>
+
+<div class="container-custom">
+  <header class="premium-header">
+    <div class="logo-badge">
+      <i class="fas fa-trophy text-blue-500 text-3xl"></i>
+      <h1 class="logo-text">ICC HUB</h1>
+    </div>
+    <p class="text-blue-400 font-bold tracking-[0.4rem] mt-6 text-xs uppercase">Official Live Streams</p>
+  </header>
+
+  <div class="section-tabs">
+    <div id="tab-live"     class="tab-btn active" onclick="switchTab('live')">LIVE NOW</div>
+    <div id="tab-upcoming" class="tab-btn"        onclick="switchTab('upcoming')">UPCOMING</div>
+    <a href="/api/m3u" class="m3u-btn" download="icc.m3u">
+      <i class="fas fa-list"></i> Download M3U
+    </a>
   </div>
 
-  <div class="container-custom">
-    <header class="premium-header">
-      <div class="logo-badge">
-        <i class="fas fa-trophy text-blue-500 text-3xl"></i>
-        <h1 class="logo-text">ICC HUB</h1>
-      </div>
-      <p class="text-blue-400 font-bold tracking-[0.4rem] mt-6 text-xs uppercase">Official Live Streams</p>
-    </header>
-
-    <div class="section-tabs">
-      <div id="tab-live" class="tab-btn active" onclick="switchTab('live')">LIVE NOW</div>
-      <div id="tab-upcoming" class="tab-btn" onclick="switchTab('upcoming')">UPCOMING</div>
-    </div>
-
-    <div id="loading" class="flex justify-center items-center py-20">
-      <span class="loader"></span>
-    </div>
-
-    <div id="matches-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <!-- Matches will be injected here -->
-    </div>
-
-    <div id="no-matches" class="hidden text-center py-20 text-gray-500 italic">
-      No matches found in this category.
-    </div>
-
-    <footer class="footer-info">
-      <div class="flex justify-center gap-6 mb-4">
-        <a href="https://t.me/jitendraunatti_github" target="_blank" class="hover:text-blue-400 transition-colors"><i
-            class="fab fa-telegram-plane mr-2"></i>Telegram</a>
-      </div>
-      <p>&copy; 2026 ICC HUB Premium. All Rights Reserved.</p>
-      <p class="mt-2 opacity-50" id="last-updated"></p>
-    </footer>
+  <div id="loading" class="flex justify-center items-center py-20">
+    <span class="loader"></span>
   </div>
 
-  <script>
-    const DATA_URL = "https://raw.githubusercontent.com/doctor-8trange/nexphi0/refs/heads/main/data/icc.json";
-    const PLAYER_URL = "icc-play.html";
+  <div id="matches-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
-    let currentData = { live: [], upcoming: [] };
-    let activeTab = 'live';
+  <div id="no-matches" class="hidden text-center py-20 text-gray-500 italic">
+    No matches found in this category.
+  </div>
 
-    async function fetchData() {
-      try {
-        const response = await fetch(DATA_URL);
-        const data = await response.json();
-        currentData.live = data.live || [];
-        currentData.upcoming = data.upcoming || [];
+  <footer class="footer-info">
+    <div class="flex justify-center gap-6 mb-4">
+      <a href="https://t.me/jitendraunatti_github" target="_blank"
+         class="hover:text-blue-400 transition-colors">
+        <i class="fab fa-telegram-plane mr-2"></i>Telegram
+      </a>
+    </div>
+    <p>&copy; 2026 ICC HUB Premium. All Rights Reserved.</p>
+    <p class="mt-2 opacity-50" id="last-updated"></p>
+  </footer>
+</div>
 
-        document.getElementById('last-updated').innerText = `Last Updated: ${data.last_updated || 'Just now'}`;
+<script>
+  const DATA_URL   = 'https://raw.githubusercontent.com/doctor-8trange/nexphi0/refs/heads/main/data/icc.json';
+  const PLAYER_URL = 'icc-play.html';
 
-        renderMatches();
-        document.getElementById('loading').classList.add('hidden');
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        document.getElementById('loading').innerHTML = '<p class="text-red-500">Failed to load match data. Please try again later.</p>';
-      }
-    }
+  let currentData = { live: [], upcoming: [] };
+  let activeTab   = 'live';
 
-    function switchTab(tab) {
-      activeTab = tab;
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById(`tab-${tab}`).classList.add('active');
+  async function fetchData() {
+    try {
+      const r    = await fetch(DATA_URL + '?_=' + Date.now());
+      const data = await r.json();
+      currentData.live     = data.live     || [];
+      currentData.upcoming = data.upcoming || [];
+      document.getElementById('last-updated').innerText =
+        `Last Updated: ${data.last_updated || 'Just now'}`;
       renderMatches();
+      document.getElementById('loading').classList.add('hidden');
+    } catch (err) {
+      console.error(err);
+      document.getElementById('loading').innerHTML =
+        '<p class="text-red-500">Failed to load match data. Please try again later.</p>';
+    }
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    renderMatches();
+  }
+
+  function renderMatches() {
+    const grid      = document.getElementById('matches-grid');
+    const noMatches = document.getElementById('no-matches');
+    const matches   = activeTab === 'live' ? currentData.live : currentData.upcoming;
+    grid.innerHTML  = '';
+    if (!matches.length) {
+      noMatches.classList.remove('hidden');
+    } else {
+      noMatches.classList.add('hidden');
+      matches.forEach((m, i) => grid.appendChild(createCard(m, i, activeTab === 'live')));
+    }
+  }
+
+  function createCard(match, index, isLive) {
+    const wrap = document.createElement('div');
+    wrap.className = 'grid-item';
+    wrap.style.animationDelay = `${index * 0.1}s`;
+
+    const thumb  = match.thumbnail?.thumbnailUrl ||
+      'https://images.icc-cricket.com/image/upload/t_ratio16_9-size40/prd/j5lu4qp67zuwbiclmcdm';
+    const title  = match.title || 'ICC Cricket Match';
+    const start  = match.fields?.scheduledStartTime
+      ? new Date(match.fields.scheduledStartTime).toLocaleString() : 'TBD';
+    const status = match.fields?.videoStatus || (isLive ? 'Live' : 'Upcoming');
+
+    // Geo-restriction warning
+    const blocked   = match.fields?.countryRestrictions?.countries || [];
+    const geoWarn   = blocked.length
+      ? `<span class="geo-badge"><i class="fas fa-globe-asia"></i>Blocked: ${blocked.join(', ')}</span>`
+      : '';
+
+    // Build player URL with keys AND headers
+    let keyParam = '';
+    const pb = match.playback;
+    if (pb?.keys?.hex) {
+      keyParam = `&hexKeys=${encodeURIComponent(pb.keys.hex)}`;
+    } else if (pb?.keys?.jwk) {
+      keyParam = `&keys=${encodeURIComponent(JSON.stringify(pb.keys.jwk))}`;
     }
 
-    function renderMatches() {
-      const grid = document.getElementById('matches-grid');
-      const noMatches = document.getElementById('no-matches');
-      const matches = activeTab === 'live' ? currentData.live : currentData.upcoming;
-
-      grid.innerHTML = '';
-
-      if (matches.length === 0) {
-        noMatches.classList.remove('hidden');
-      } else {
-        noMatches.classList.add('hidden');
-        matches.forEach((match, index) => {
-          const card = createMatchCard(match, index, activeTab === 'live');
-          grid.appendChild(card);
-        });
-      }
+    let headersParam = '';
+    if (pb?.headers?.length) {
+      headersParam = `&headers=${encodeURIComponent(JSON.stringify(pb.headers))}`;
     }
 
-    function createMatchCard(match, index, isLive) {
-      const container = document.createElement('div');
-      container.className = 'grid-item';
-      container.style.animationDelay = `${index * 0.1}s`;
+    const playbackUrl = pb?.playbackUrl || '';
+    const canWatch    = isLive && !!playbackUrl;
+    const playerHref  = canWatch
+      ? `${PLAYER_URL}?url=${encodeURIComponent(playbackUrl)}${keyParam}${headersParam}`
+      : '#';
 
-      const thumb = match.thumbnail?.thumbnailUrl || 'https://images.icc-cricket.com/image/upload/t_ratio16_9-size40/prd/j5lu4qp67zuwbiclmcdm';
-      const title = match.title || 'ICC Cricket Match';
-      const startTime = match.fields?.scheduledStartTime ? new Date(match.fields.scheduledStartTime).toLocaleString() : 'TBD';
-      const status = match.fields?.videoStatus || (isLive ? 'Live' : 'Upcoming');
-
-      // Extract keys for player
-      let keyParam = '';
-      if (match.playback?.keys?.jwk) {
-        keyParam = `&keys=${encodeURIComponent(JSON.stringify(match.playback.keys.jwk))}`;
-      } else if (match.playback?.keys?.hex) {
-        keyParam = `&hexKeys=${encodeURIComponent(match.playback.keys.hex)}`;
-      }
-
-      const playbackUrl = match.playback?.playbackUrl || '';
-      const watchAction = isLive ? `window.location.href='${PLAYER_URL}?url=${encodeURIComponent(playbackUrl)}${keyParam}'` : '';
-      const watchBtnClass = isLive ? 'watch-btn' : 'watch-btn upcoming';
-      const watchText = isLive ? '<i class="fas fa-play"></i> WATCH LIVE' : '<i class="fas fa-clock"></i> COMING SOON';
-
-      container.innerHTML = `
-        <div class="match-card">
-          <div class="card-image">
-            <img src="${thumb}" alt="${title}" onerror="this.src='https://images.icc-cricket.com/image/upload/t_ratio16_9-size40/prd/j5lu4qp67zuwbiclmcdm'">
-            ${isLive ? '<div class="live-tag"><span class="w-2 h-2 bg-white rounded-full"></span>Live</div>' : ''}
-          </div>
-          <div class="card-content">
-            <div class="match-status">${status}</div>
-            <h3 class="match-title">${title}</h3>
-            <div class="match-meta">
-              <span><i class="far fa-calendar-alt mr-2"></i>${startTime}</span>
-            </div>
-            <div onclick="${watchAction}" class="${watchBtnClass}">
-              ${watchText}
-            </div>
-          </div>
+    wrap.innerHTML = `
+      <div class="match-card">
+        <div class="card-image">
+          <img src="${thumb}" alt="${title}"
+               onerror="this.src='https://images.icc-cricket.com/image/upload/t_ratio16_9-size40/prd/j5lu4qp67zuwbiclmcdm'">
+          ${isLive ? '<div class="live-tag"><span class="w-2 h-2 bg-white rounded-full"></span>Live</div>' : ''}
+          ${blocked.includes('IN') ? '<div class="blocked-tag">🇮🇳 Geo-blocked IN</div>' : ''}
         </div>
-      `;
+        <div class="card-content">
+          <div class="match-status">${status}</div>
+          <h3 class="match-title">${title}</h3>
+          <div class="match-meta">
+            <span><i class="far fa-calendar-alt mr-1"></i>${start}</span>
+            ${geoWarn}
+          </div>
+          ${canWatch
+            ? `<a href="${playerHref}" class="watch-btn"><i class="fas fa-play"></i> WATCH LIVE</a>`
+            : `<div class="watch-btn upcoming"><i class="fas fa-clock"></i> COMING SOON</div>`
+          }
+        </div>
+      </div>`;
+    return wrap;
+  }
 
-      return container;
-    }
-
-    // Initialize
-    fetchData();
-
-    // Auto refresh every 2 minutes
-    setInterval(fetchData, 120000);
-  </script>
+  fetchData();
+  setInterval(fetchData, 120000);
+</script>
 </body>
-
 </html>
