@@ -9,309 +9,307 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100vw; height:100vh; background:#000; overflow:hidden; font-family:system-ui,sans-serif; }
 
-    html, body {
-      width: 100vw; height: 100vh;
-      background: #000;
-      overflow: hidden;
-      font-family: system-ui, sans-serif;
+    .shaka-video-container { position:absolute; inset:0; width:100%; height:100%; }
+    video { width:100%; height:100%; background:#000; object-fit:contain; display:block; }
+
+    /* Hide shaka's own spinner — we show ours */
+    .shaka-spinner-container { display:none !important; }
+
+    /* ── Overlay ── */
+    #overlay {
+      position:absolute; inset:0; z-index:50;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:18px; background:rgba(0,0,0,0.88); color:#fff; text-align:center; padding:32px;
+      transition:opacity 0.3s;
     }
+    #overlay.hidden { display:none; }
+    #overlay h2 { font-size:1.1rem; font-weight:700; max-width:420px; }
+    #overlay p  { font-size:0.82rem; color:rgba(255,255,255,0.5); max-width:400px; line-height:1.6; }
+    #overlay .icon { font-size:2.5rem; }
+    #overlay .icon.spin { animation:spin 1s linear infinite; font-size:2rem; color:#0066ff; }
 
-    /* Full-screen Shaka container */
-    .shaka-video-container {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-    }
-
-    video {
-      width: 100%; height: 100%;
-      background: #000;
-      object-fit: contain;
-    }
-
-    /* Override Shaka seek-bar colour */
-    .shaka-range-element::-webkit-slider-thumb { background: #0066ff; }
-    .shaka-current-time { color: #0066ff; }
-
-    /* ── Back button ── */
-    #btn-back {
-      position: absolute; top: 20px; left: 20px; z-index: 200;
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(0,0,0,0.55); backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #fff; text-decoration: none;
-      padding: 10px 20px; border-radius: 50px;
-      font-size: 0.85rem; font-weight: 600;
-      transition: background 0.2s, opacity 0.4s;
-      opacity: 1;
-    }
-    #btn-back:hover { background: rgba(0,102,255,0.5); }
-    #btn-back.hidden { opacity: 0; pointer-events: none; }
-
-    /* ── Match title overlay ── */
-    #match-title {
-      position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-      z-index: 200;
-      background: rgba(0,0,0,0.55); backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: #fff; padding: 8px 20px; border-radius: 50px;
-      font-size: 0.85rem; font-weight: 600; white-space: nowrap;
-      max-width: 60vw; overflow: hidden; text-overflow: ellipsis;
-      opacity: 1; transition: opacity 0.4s;
-    }
-    #match-title.hidden { opacity: 0; pointer-events: none; }
-
-    /* ── Status overlay (errors / loading text) ── */
-    #status {
-      position: absolute; inset: 0; z-index: 100;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 20px;
-      background: rgba(0,0,0,0.85);
-      color: #fff; text-align: center; padding: 24px;
-    }
-
-    #status.hidden { display: none; }
-
-    .spinner {
-      width: 52px; height: 52px;
-      border: 4px solid rgba(255,255,255,0.15);
-      border-top-color: #0066ff;
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    #status h2 { font-size: 1.1rem; font-weight: 700; }
-    #status p  { font-size: 0.82rem; color: rgba(255,255,255,0.55); max-width: 400px; }
-
-    #status .err-icon { font-size: 2.5rem; color: #ff4444; }
+    @keyframes spin { to { transform:rotate(360deg); } }
 
     #btn-retry {
-      margin-top: 8px; padding: 10px 28px; border-radius: 50px;
-      background: #0066ff; color: #fff; border: none;
-      font-weight: 700; font-size: 0.9rem; cursor: pointer;
-      display: none;
+      display:none; padding:10px 30px; border-radius:50px;
+      background:#0066ff; color:#fff; border:none;
+      font-weight:700; font-size:0.9rem; cursor:pointer;
     }
-    #btn-retry:hover { background: #0055dd; }
+    #btn-retry:hover { background:#0050dd; }
 
-    /* Hide Shaka's own spinner — we show our own */
-    .shaka-spinner-container { display: none !important; }
+    /* ── Top bar ── */
+    #topbar {
+      position:absolute; top:0; left:0; right:0; z-index:100;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 20px;
+      background:linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+      transition:opacity 0.4s;
+    }
+    #topbar.fade { opacity:0; pointer-events:none; }
+
+    #btn-back {
+      display:flex; align-items:center; gap:8px;
+      background:rgba(0,0,0,0.5); backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,0.15);
+      color:#fff; text-decoration:none;
+      padding:9px 18px; border-radius:50px;
+      font-size:0.82rem; font-weight:600;
+    }
+    #btn-back:hover { background:rgba(0,102,255,0.5); }
+
+    #match-label {
+      color:rgba(255,255,255,0.85); font-size:0.82rem; font-weight:600;
+      background:rgba(0,0,0,0.5); backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,0.12);
+      padding:8px 18px; border-radius:50px;
+      max-width:50vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+
+    /* Debug log box — only visible when there's an error */
+    #debug {
+      display:none;
+      background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.1);
+      border-radius:8px; padding:12px; max-width:440px;
+      font-size:0.72rem; color:#ff9999; text-align:left;
+      max-height:120px; overflow-y:auto; font-family:monospace;
+    }
   </style>
 </head>
 <body>
 
-  <a id="btn-back" href="index.html">
-    <i class="fas fa-arrow-left"></i> Back to Hub
-  </a>
-
-  <div id="match-title">Loading...</div>
-
-  <div id="status">
-    <div class="spinner"></div>
-    <h2>Loading stream…</h2>
-    <p>Please wait while we connect to the live stream.</p>
+  <!-- Top bar -->
+  <div id="topbar">
+    <a id="btn-back" href="index.html"><i class="fas fa-arrow-left"></i> Back</a>
+    <div id="match-label">Loading…</div>
   </div>
 
-  <div class="shaka-video-container" data-shaka-player-container>
-    <video id="video" autoplay playsinline preload="metadata"></video>
+  <!-- Status overlay -->
+  <div id="overlay">
+    <i class="fas fa-circle-notch icon spin"></i>
+    <h2 id="ov-title">Connecting to stream…</h2>
+    <p  id="ov-detail">Please wait.</p>
+    <pre id="debug"></pre>
+    <button id="btn-retry" onclick="startPlayer()">Retry</button>
   </div>
 
-  <button id="btn-retry" onclick="initPlayer()">Retry</button>
+  <!-- Player -->
+  <div class="shaka-video-container" id="shaka-container">
+    <video id="video" autoplay playsinline preload="auto"></video>
+  </div>
 
 <script>
-  // ── Parse URL params ────────────────────────────────────────────────────
-  const params  = new URLSearchParams(location.search);
-  const mpdUrl  = params.get('url')   || '';
-  const rawKeys = params.get('keys')  || '';  // "kid1:key1,kid2:key2"
-  const title   = params.get('title') || 'Live Match';
+// ── Read URL params ─────────────────────────────────────────────────────────
+const params  = new URLSearchParams(location.search);
+const mpdUrl  = (params.get('url')   || '').trim();
+const rawKeys = (params.get('keys')  || '').trim();
+const title   = (params.get('title') || 'Live Match').trim();
 
-  document.getElementById('match-title').textContent = '⚽ ' + title;
-  document.title = title + ' — Sportlink';
+document.getElementById('match-label').textContent = '⚽ ' + title;
+document.title = title + ' — Sportlink';
 
-  // ── Proxy helpers ───────────────────────────────────────────────────────
-  const PROXY_BASE = location.origin + '/api/proxy';
+// ── Parse ClearKey pairs: "kid1:key1,kid2:key2" ─────────────────────────────
+function parseKeys(raw) {
+  const out = {};
+  if (!raw) return out;
+  raw.split(',').forEach(pair => {
+    const i = pair.indexOf(':');
+    if (i < 1) return;
+    const kid = pair.slice(0, i).trim().toLowerCase().replace(/-/g, '');
+    const key = pair.slice(i + 1).trim().toLowerCase().replace(/-/g, '');
+    if (kid && key) out[kid] = key;
+  });
+  return out;
+}
 
-  function proxify(uri) {
-    if (!uri || uri.startsWith('data:') || uri.startsWith('blob:')) return uri;
-    if (uri.includes('/api/proxy')) return uri; // already proxied
-    return PROXY_BASE + '?u=' + encodeURIComponent(uri);
+// ── Proxy helper ─────────────────────────────────────────────────────────────
+// All stream requests go through /api/proxy so CORS + headers are handled
+function proxify(uri) {
+  if (!uri) return uri;
+  if (uri.startsWith('data:') || uri.startsWith('blob:')) return uri;
+  if (uri.includes(location.origin)) return uri;      // already local
+  if (uri.includes('/api/proxy'))    return uri;      // already proxied
+  return location.origin + '/api/proxy?u=' + encodeURIComponent(uri);
+}
+
+// ── Overlay helpers ──────────────────────────────────────────────────────────
+function showLoading(title, detail) {
+  const ov = document.getElementById('overlay');
+  ov.classList.remove('hidden');
+  document.getElementById('ov-title').textContent  = title;
+  document.getElementById('ov-detail').textContent = detail || '';
+  document.getElementById('debug').style.display   = 'none';
+  document.getElementById('btn-retry').style.display = 'none';
+  ov.querySelector('.icon').className = 'fas fa-circle-notch icon spin';
+}
+
+function showError(title, detail, debugMsg) {
+  const ov = document.getElementById('overlay');
+  ov.classList.remove('hidden');
+  ov.querySelector('.icon').className = 'fas fa-exclamation-triangle icon';
+  ov.querySelector('.icon').style.color = '#ff4444';
+  document.getElementById('ov-title').textContent  = title;
+  document.getElementById('ov-detail').textContent = detail || '';
+  document.getElementById('btn-retry').style.display = 'inline-block';
+  if (debugMsg) {
+    const dbg = document.getElementById('debug');
+    dbg.style.display = 'block';
+    dbg.textContent   = debugMsg;
+  }
+}
+
+function hideOverlay() {
+  document.getElementById('overlay').classList.add('hidden');
+}
+
+// ── Auto-hide top bar on idle ────────────────────────────────────────────────
+let hideTimer;
+function resetHide() {
+  document.getElementById('topbar').classList.remove('fade');
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => {
+    document.getElementById('topbar').classList.add('fade');
+  }, 4000);
+}
+document.addEventListener('mousemove', resetHide);
+document.addEventListener('touchstart', resetHide);
+resetHide();
+
+// ── Main player ──────────────────────────────────────────────────────────────
+let player;
+
+async function startPlayer() {
+  if (!mpdUrl) {
+    showError('No stream URL', 'Return to the hub and select a live match.');
+    return;
   }
 
-  // ── Parse decryption keys ────────────────────────────────────────────────
-  function parseKeys(raw) {
-    const keys = {};
-    if (!raw) return keys;
-    raw.split(',').forEach(pair => {
-      const idx = pair.indexOf(':');
-      if (idx < 1) return;
-      const kid = pair.slice(0, idx).trim().toLowerCase();
-      const key = pair.slice(idx + 1).trim().toLowerCase();
-      if (kid && key) keys[kid] = key;
-    });
-    return keys;
+  showLoading('Connecting to stream…', 'Setting up the player.');
+
+  shaka.polyfill.installAll();
+
+  if (!shaka.Player.isBrowserSupported()) {
+    showError('Browser not supported',
+      'Please use Chrome, Firefox, Edge, or Safari 16+.');
+    return;
   }
 
-  // ── UI helpers ──────────────────────────────────────────────────────────
-  function setStatus(type, heading, detail) {
-    const el = document.getElementById('status');
-    const retry = document.getElementById('btn-retry');
-    el.classList.remove('hidden');
+  const video = document.getElementById('video');
 
-    if (type === 'loading') {
-      el.innerHTML = `
-        <div class="spinner"></div>
-        <h2>${heading}</h2>
-        <p>${detail || ''}</p>`;
-    } else {
-      el.innerHTML = `
-        <i class="fas fa-exclamation-triangle err-icon"></i>
-        <h2>${heading}</h2>
-        <p>${detail || ''}</p>`;
-      retry.style.display = 'inline-block';
-      el.appendChild(retry);
-    }
+  // Destroy previous instance on retry
+  if (player) {
+    try { await player.destroy(); } catch(_) {}
+    player = null;
   }
 
-  function hideStatus() {
-    document.getElementById('status').classList.add('hidden');
-  }
+  player = new shaka.Player();
+  await player.attach(video);
 
-  // ── Auto-hide UI on mouse idle ──────────────────────────────────────────
-  let hideTimer;
-  function resetHide() {
-    document.getElementById('btn-back').classList.remove('hidden');
-    document.getElementById('match-title').classList.remove('hidden');
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => {
-      document.getElementById('btn-back').classList.add('hidden');
-      document.getElementById('match-title').classList.add('hidden');
-    }, 4000);
-  }
-  document.addEventListener('mousemove', resetHide);
-  document.addEventListener('touchstart', resetHide);
-  resetHide();
+  // Shaka UI
+  const ui = new shaka.ui.Overlay(
+    player,
+    document.getElementById('shaka-container'),
+    video
+  );
+  ui.configure({
+    controlPanelElements: [
+      'play_pause','time_and_duration','spacer',
+      'mute','volume','quality','picture_in_picture','fullscreen'
+    ],
+    seekBarColors:   { base:'rgba(0,102,255,0.3)', buffered:'rgba(0,102,255,0.6)', played:'#0066ff' },
+    volumeBarColors: { base:'rgba(0,102,255,0.3)', level:'#0066ff' },
+    fadeDelay: 3,
+  });
 
-  // ── Main player init ────────────────────────────────────────────────────
-  let player;
+  // ── ClearKey DRM ──
+  const clearKeys = parseKeys(rawKeys);
+  const hasDrm    = Object.keys(clearKeys).length > 0;
 
-  async function initPlayer() {
-    if (!mpdUrl) {
-      setStatus('error', 'No stream URL provided',
-        'Return to the hub and select a live match.');
-      return;
-    }
-
-    setStatus('loading', 'Connecting to stream…', 'This may take a few seconds.');
-
-    shaka.polyfill.installAll();
-
-    if (!shaka.Player.isBrowserSupported()) {
-      setStatus('error', 'Browser not supported',
-        'Please use a modern browser (Chrome, Firefox, Edge, Safari 16+).');
-      return;
-    }
-
-    const video = document.getElementById('video');
-
-    // Destroy previous instance if retrying
-    if (player) {
-      try { await player.destroy(); } catch(_) {}
-    }
-
-    player = new shaka.Player();
-    await player.attach(video);
-
-    // Shaka UI
-    const container = document.querySelector('[data-shaka-player-container]');
-    const ui = new shaka.ui.Overlay(player, container, video);
-    ui.configure({
-      controlPanelElements: [
-        'play_pause','time_and_duration','spacer',
-        'mute','volume','quality','language',
-        'picture_in_picture','fullscreen'
-      ],
-      seekBarColors: {
-        base:     'rgba(0,102,255,0.3)',
-        buffered: 'rgba(0,102,255,0.6)',
-        played:   '#0066ff',
+  // ── Configure player ──
+  player.configure({
+    drm: hasDrm ? { clearKeys } : {},
+    streaming: {
+      lowLatencyMode:  false,   // false is more stable for CENC DASH
+      bufferingGoal:   20,
+      rebufferingGoal: 5,
+      bufferBehind:    30,
+      retryParameters: {
+        maxAttempts:  5,
+        baseDelay:    1000,
+        backoffFactor:2,
+        timeout:      30000,
       },
-      volumeBarColors: {
-        base:  'rgba(0,102,255,0.3)',
-        level: '#0066ff',
-      },
-      fadeDelay: 3,
-    });
+    },
+    manifest: {
+      retryParameters: { maxAttempts:4, timeout:20000 },
+    },
+  });
 
-    // ── DRM / ClearKey ──
-    const clearKeys = parseKeys(rawKeys);
-    const drmConfig = Object.keys(clearKeys).length
-      ? { clearKeys }
-      : {};
+  // ── Network filter — proxy every outgoing request ──
+  player.getNetworkingEngine().registerRequestFilter((_type, request) => {
+    request.uris = request.uris.map(proxify);
+    // Remove any existing auth/origin headers — the proxy adds its own
+    delete request.headers['Origin'];
+    delete request.headers['Referer'];
+  });
 
-    // ── Player config ──
-    player.configure({
-      drm: drmConfig,
-      streaming: {
-        lowLatencyMode:   true,
-        bufferingGoal:    15,
-        rebufferingGoal:  3,
-        bufferBehind:     30,
-        retryParameters: {
-          maxAttempts:   6,
-          baseDelay:     1000,
-          backoffFactor: 2,
-          timeout:       30000,
-        },
-      },
-      manifest: {
-        retryParameters: {
-          maxAttempts: 5,
-          timeout:     30000,
-        },
-      },
-    });
+  // ── Error event ──
+  player.addEventListener('error', e => {
+    const code = e.detail?.code;
+    const msg  = shakaErrorMessage(code);
+    console.error('[Shaka error]', code, e.detail);
+    showError(
+      'Playback error (code ' + code + ')',
+      msg,
+      JSON.stringify(e.detail, null, 2).slice(0, 600)
+    );
+  });
 
-    // ── Proxy network filter ──
-    // Every outgoing request is routed through /api/proxy
-    player.getNetworkingEngine().registerRequestFilter((_type, request) => {
-      request.uris = request.uris.map(proxify);
-      // Let the proxy handle auth headers for FIFA+
-      request.headers = {};
-    });
+  // ── Buffering event ──
+  player.addEventListener('buffering', e => {
+    if (e.buffering) showLoading('Buffering…', 'Re-filling buffer, please wait.');
+    else hideOverlay();
+  });
 
-    // ── Error handler ──
-    player.addEventListener('error', e => {
-      const code = e.detail?.code || 'unknown';
-      const msg  = e.detail?.message || 'Playback error';
-      console.error('[Shaka]', code, msg, e.detail);
-      setStatus('error',
-        'Playback Error (code ' + code + ')',
-        msg + ' — Check the proxy or stream URL and retry.');
-    });
-
-    // ── Buffering state ──
-    player.addEventListener('buffering', e => {
-      if (e.buffering) setStatus('loading', 'Buffering…', 'Re-filling buffer.');
-      else hideStatus();
-    });
-
-    // ── Load ──
-    try {
-      await player.load(proxify(mpdUrl));
-      hideStatus();
-      await video.play();
-    } catch(err) {
-      console.error('[Load error]', err);
-      setStatus('error',
-        'Failed to load stream',
-        'Code ' + (err.code || '') + ': ' + (err.message || 'Unknown error') +
-        '. The stream may have ended or the URL is invalid.');
-    }
+  // ── Load stream ──
+  try {
+    showLoading('Loading manifest…', 'Fetching stream info through proxy.');
+    await player.load(proxify(mpdUrl));
+    hideOverlay();
+    await video.play().catch(() => {});   // autoplay may require user gesture
+  } catch (err) {
+    console.error('[Load error]', err);
+    showError(
+      'Failed to load stream',
+      shakaErrorMessage(err.code) + ' — The stream may have ended or the key is wrong.',
+      'Code: ' + err.code + '\n' + (err.message || '')
+    );
   }
+}
 
-  initPlayer();
+// ── Human-readable Shaka error messages ─────────────────────────────────────
+function shakaErrorMessage(code) {
+  const map = {
+    1001: 'Network request failed — stream URL unreachable.',
+    1002: 'Network request timed out.',
+    1003: 'Bad HTTP status from stream server.',
+    2000: 'Could not parse the manifest (MPD).',
+    2001: 'Invalid manifest — check the MPD URL.',
+    3000: 'Streaming error — codec or container issue.',
+    3016: 'Quota exceeded — try refreshing.',
+    4000: 'DRM: key system not supported in this browser.',
+    4001: 'DRM: license request failed.',
+    4002: 'DRM: license response rejected.',
+    4012: 'DRM: ClearKey not supported in this browser.',
+    4016: 'DRM: Wrong decryption key provided.',
+    4032: 'DRM: Could not find decryption key ID in manifest.',
+  };
+  return map[code] || 'Unexpected error. Check console for details.';
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+startPlayer();
 </script>
 </body>
 </html>
