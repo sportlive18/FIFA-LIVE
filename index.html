@@ -3,243 +3,415 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FIFA Plus Live | Sportlink</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+  <title>Sportlink — FIFA Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --primary: #0088ff;
-      --primary-glow: rgba(0, 136, 255, 0.5);
-      --bg-dark: #020617;
-      --card-bg: rgba(15, 23, 42, 0.7);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
+      --blue: #0066ff;
+      --blue-glow: rgba(0,102,255,0.35);
+      --red: #ff2d2d;
+      --bg: #07090f;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text: #f0f4ff;
+      --muted: #6b7a99;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
     body {
-      background: var(--bg-dark);
-      font-family: 'Outfit', sans-serif;
-      color: var(--text-main);
+      background: var(--bg);
+      font-family: 'Barlow', sans-serif;
+      color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
-      background-image: 
-        radial-gradient(circle at 10% 20%, rgba(0, 136, 255, 0.1) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(0, 136, 255, 0.1) 0%, transparent 40%);
     }
-    .bg-glow {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,102,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,102,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
     }
-    .glow-sphere {
-      position: absolute; width: 600px; height: 600px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(0, 136, 255, 0.1) 0%, transparent 70%);
-      filter: blur(80px); animation: float 20s infinite alternate ease-in-out;
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,102,255,0.12) 0%, transparent 70%);
+      filter: blur(60px);
+      z-index: 0;
+      pointer-events: none;
     }
-    @keyframes float { 0% { transform: translate(-10%, -10%) scale(1); } 100% { transform: translate(20%, 20%) scale(1.2); } }
-    
-    .container-custom { max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
-    
-    .premium-header { text-align: center; margin-bottom: 4rem; position: relative; }
-    .logo-badge {
-      display: inline-flex; align-items: center; gap: 1rem; background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(12px); padding: 1rem 3rem; border-radius: 100px;
-      border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-      animation: fadeInDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    .wrap { max-width: 1300px; margin: 0 auto; padding: 0 24px 80px; position: relative; z-index: 1; }
+
+    /* ── Header ── */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 0 60px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
     }
-    .logo-text {
-      font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;
-      background: linear-gradient(135deg, #fff 30%, var(--primary));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+
+    .brand {
+      display: flex; align-items: center; gap: 14px;
     }
-    
-    .section-tabs { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 3rem; flex-wrap: wrap; }
-    .tab-btn {
-      padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; cursor: pointer; transition: all 0.3s;
-      border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: var(--text-muted);
+
+    .brand-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue), #003db3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; box-shadow: 0 8px 24px var(--blue-glow);
     }
-    .tab-btn.active {
-      background: var(--primary); color: #fff; border-color: var(--primary);
-      box-shadow: 0 10px 20px var(--primary-glow);
+
+    .brand-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900; font-size: 1.7rem; letter-spacing: 1px;
+      text-transform: uppercase;
     }
-    
-    .match-card {
-      background: var(--card-bg); backdrop-filter: blur(16px); border-radius: 2rem;
-      border: 1px solid rgba(255, 255, 255, 0.05); overflow: hidden; transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-      display: flex; flex-direction: column; height: 100%;
+
+    .brand-name span { color: var(--blue); }
+
+    .live-indicator {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,45,45,0.1); border: 1px solid rgba(255,45,45,0.3);
+      padding: 8px 18px; border-radius: 50px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 0.85rem; letter-spacing: 2px;
+      color: var(--red);
     }
-    .match-card:hover {
-      transform: translateY(-10px) scale(1.02); border-color: rgba(0, 136, 255, 0.4);
-      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 136, 255, 0.1);
+
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--red);
+      animation: pulse 1.5s infinite;
     }
-    .card-image { position: relative; height: 200px; overflow: hidden; }
-    .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
-    .match-card:hover .card-image img { transform: scale(1.1); }
-    
-    .live-tag {
-      position: absolute; top: 1rem; left: 1rem; background: #ef4444; padding: 0.4rem 1rem;
-      border-radius: 50px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
-      display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
-      z-index: 10; animation: pulse 2s infinite;
-    }
+
     @keyframes pulse {
-      0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); }
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
     }
-    
-    .card-content { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; }
-    .match-category { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); font-weight: 700; margin-bottom: 0.5rem; }
-    .match-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.3; }
-    .match-meta { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.85rem; flex-wrap: wrap; }
-    
-    .watch-btn {
-      width: 100%; padding: 1rem; border-radius: 1rem;
-      background: linear-gradient(135deg, var(--primary), #1d4ed8); color: #fff; font-weight: 700;
-      text-align: center; transition: all 0.3s; cursor: pointer; display: flex;
-      align-items: center; justify-content: center; gap: 0.75rem;
-      border: 1px solid rgba(255, 255, 255, 0.1); margin-top: auto;
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 4px;
+      width: fit-content; margin-bottom: 40px;
     }
-    .watch-btn:hover { transform: scale(1.02); box-shadow: 0 15px 30px rgba(0, 136, 255, 0.4); filter: brightness(1.1); }
-    .watch-btn.upcoming {
-      background: rgba(255, 255, 255, 0.05); color: var(--text-muted);
-      cursor: not-allowed; pointer-events: none; border-color: transparent;
+
+    .tab {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 0.9rem; letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 10px 24px;
+      border-radius: 10px; cursor: pointer;
+      color: var(--muted); transition: all 0.25s;
+      border: none; background: none;
     }
-    
-    .loader {
-      width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: var(--primary);
-      border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite;
+
+    .tab.active {
+      background: var(--blue); color: #fff;
+      box-shadow: 0 4px 16px var(--blue-glow);
     }
-    @keyframes rotation { 100% { transform: rotate(360deg); } }
-    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .grid-item { animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-    
-    .footer-info { margin-top: 5rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; }
+
+    .tab:hover:not(.active) { color: var(--text); }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 24px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+      transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+      display: flex; flex-direction: column;
+      animation: fadeUp 0.5s both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(20px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0,102,255,0.4);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--blue-glow);
+    }
+
+    .card-thumb {
+      position: relative; height: 195px; overflow: hidden;
+      background: #0d1220;
+    }
+
+    .card-thumb img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.6s;
+    }
+
+    .card:hover .card-thumb img { transform: scale(1.08); }
+
+    .card-thumb::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(7,9,15,0.8) 0%, transparent 60%);
+    }
+
+    .badge-live {
+      position: absolute; top: 14px; left: 14px; z-index: 2;
+      background: var(--red); color: #fff;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 0.72rem; letter-spacing: 2px;
+      padding: 4px 12px; border-radius: 50px;
+      display: flex; align-items: center; gap: 6px;
+      box-shadow: 0 4px 16px rgba(255,45,45,0.5);
+    }
+
+    .badge-upcoming {
+      position: absolute; top: 14px; left: 14px; z-index: 2;
+      background: rgba(0,0,0,0.6); color: var(--muted);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 0.72rem; letter-spacing: 2px;
+      padding: 4px 12px; border-radius: 50px;
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+
+    .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+
+    .card-cat {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 0.72rem; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--blue); margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 1.3rem; line-height: 1.25;
+      margin-bottom: 12px;
+    }
+
+    .card-meta {
+      font-size: 0.82rem; color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .card-meta i { color: var(--blue); font-size: 0.75rem; }
+
+    .btn-watch {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 13px; border-radius: 12px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 1rem; letter-spacing: 1.5px;
+      text-transform: uppercase; text-decoration: none;
+      transition: all 0.25s; margin-top: auto;
+      border: none; cursor: pointer;
+    }
+
+    .btn-watch.live {
+      background: linear-gradient(135deg, var(--blue) 0%, #0044cc 100%);
+      color: #fff;
+      box-shadow: 0 6px 20px var(--blue-glow);
+    }
+
+    .btn-watch.live:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 10px 30px var(--blue-glow);
+      transform: scale(1.02);
+    }
+
+    .btn-watch.upcoming {
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      cursor: default; pointer-events: none;
+    }
+
+    /* ── States ── */
+    .state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 0; text-align: center; gap: 16px;
+    }
+
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .state p { color: var(--muted); font-size: 0.9rem; }
+
+    .hidden { display: none !important; }
+
+    footer {
+      text-align: center; margin-top: 60px;
+      color: var(--muted); font-size: 0.78rem;
+      border-top: 1px solid var(--border); padding-top: 30px;
+    }
   </style>
 </head>
 <body>
-
-<div class="bg-glow"><div class="glow-sphere"></div></div>
-
-<div class="container-custom">
-  <header class="premium-header">
-    <div class="logo-badge">
-      <i class="fas fa-futbol text-blue-500 text-3xl"></i>
-      <h1 class="logo-text">Sportlink-FIFA HUB</h1>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="brand-icon"><i class="fas fa-futbol"></i></div>
+      <div class="brand-name">Sport<span>link</span> FIFA Hub</div>
     </div>
-    <p class="text-blue-400 font-bold tracking-[0.4rem] mt-6 text-xs uppercase">Premium Football Events</p>
-    <!-- Demo button removed -->
+    <div class="live-indicator">
+      <div class="pulse-dot"></div> LIVE NOW
+    </div>
   </header>
 
-  <div class="section-tabs">
-    <div id="tab-all" class="tab-btn active" onclick="switchTab('all')">ALL MATCHES</div>
-    <div id="tab-live" class="tab-btn" onclick="switchTab('live')">LIVE</div>
-    <div id="tab-upcoming" class="tab-btn" onclick="switchTab('upcoming')">UPCOMING</div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('all')" id="tab-all">All</button>
+    <button class="tab" onclick="switchTab('live')" id="tab-live">Live</button>
+    <button class="tab" onclick="switchTab('upcoming')" id="tab-upcoming">Upcoming</button>
   </div>
 
-  <div id="loading" class="flex justify-center items-center py-20">
-    <span class="loader"></span>
+  <div id="state-loading" class="state">
+    <div class="spinner"></div>
+    <p>Loading matches...</p>
   </div>
 
-  <div id="matches-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-
-  <div id="no-matches" class="hidden text-center py-20 text-gray-500 italic">
-    No matches found in this category.
+  <div id="state-error" class="state hidden">
+    <i class="fas fa-exclamation-triangle" style="font-size:2rem;color:#ff6b6b;"></i>
+    <p id="error-msg">Failed to load match data.</p>
   </div>
 
-  <footer class="footer-info">
-    <p>&copy; 2026 FIFA PLUS HUB | Sportlink Premium. All Rights Reserved.</p>
-    <p class="mt-2 opacity-50" id="last-updated"></p>
+  <div id="state-empty" class="state hidden">
+    <i class="fas fa-calendar-times" style="font-size:2rem;color:var(--muted);"></i>
+    <p>No matches in this category right now.</p>
+  </div>
+
+  <div id="grid" class="grid hidden"></div>
+
+  <footer>
+    <p>&copy; 2026 Sportlink FIFA Hub &mdash; Premium Football Streaming</p>
+    <p id="last-updated" style="margin-top:6px;opacity:0.5;"></p>
   </footer>
 </div>
 
 <script>
   const DATA_URL = 'https://raw.githubusercontent.com/srhady/fifaplus/refs/heads/main/match_data.json';
-  const PLAYER_URL = 'fifa-play.html';
+  const PLAYER  = 'player.html';
 
-  let allMatches = [];
-  let activeTab = 'all';
+  let matches = [];
+  let tab = 'all';
 
-  async function fetchData() {
+  async function load() {
     try {
-      const r = await fetch(DATA_URL + '?_=' + Date.now());
-      const data = await r.json();
-      allMatches = data.matches || [];
-      document.getElementById('last-updated').innerText = 
-        `Last Updated: ${data.metadata?.last_update_time || 'Just now'}`;
-      renderMatches();
-      document.getElementById('loading').classList.add('hidden');
-    } catch (err) {
-      console.error(err);
-      document.getElementById('loading').innerHTML = 
-        '<p class="text-red-500">Failed to load FIFA match data.</p>';
+      const res  = await fetch(DATA_URL + '?_=' + Date.now());
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      matches = data.matches || [];
+      const lu = data.metadata?.last_update_time;
+      if (lu) document.getElementById('last-updated').textContent = 'Last updated: ' + lu;
+      render();
+      show('grid');
+    } catch(e) {
+      document.getElementById('error-msg').textContent = 'Failed to load: ' + e.message;
+      show('state-error');
     }
   }
 
-  function switchTab(tab) {
-    activeTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`tab-${tab}`).classList.add('active');
-    renderMatches();
+  function show(id) {
+    ['state-loading','state-error','state-empty','grid'].forEach(x => {
+      document.getElementById(x).classList.toggle('hidden', x !== id);
+    });
   }
 
-  function renderMatches() {
-    const grid = document.getElementById('matches-grid');
-    const noMatches = document.getElementById('no-matches');
-    
-    let filtered = allMatches;
-    if (activeTab === 'live') filtered = allMatches.filter(m => m.status === 'live' || m.status === 'started');
-    if (activeTab === 'upcoming') filtered = allMatches.filter(m => m.status === 'upcoming');
+  function switchTab(t) {
+    tab = t;
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + t).classList.add('active');
+    render();
+  }
 
+  function render() {
+    let list = matches;
+    if (tab === 'live')     list = matches.filter(m => m.status === 'live' || m.status === 'started');
+    if (tab === 'upcoming') list = matches.filter(m => m.status === 'upcoming');
+
+    if (!list.length) { show('state-empty'); return; }
+    show('grid');
+
+    const grid = document.getElementById('grid');
     grid.innerHTML = '';
-    if (!filtered.length) {
-      noMatches.classList.remove('hidden');
-    } else {
-      noMatches.classList.add('hidden');
-      filtered.forEach((m, i) => grid.appendChild(createCard(m, i)));
-    }
+    list.forEach((m, i) => {
+      const el = buildCard(m);
+      el.style.animationDelay = (i * 0.06) + 's';
+      grid.appendChild(el);
+    });
   }
 
-  function createCard(match, index) {
-    const wrap = document.createElement('div');
-    wrap.className = 'grid-item';
-    wrap.style.animationDelay = `${index * 0.05}s`;
+  function buildCard(m) {
+    const isLive = m.status === 'live' || m.status === 'started';
+    const thumb  = m.wideCoverUrl || m.backdropUri || '';
+    const title  = m.title || 'Football Match';
+    const cat    = m.category || 'Football';
+    const start  = m.startDate ? new Date(m.startDate).toLocaleString() : '';
 
-    const thumb = match.wideCoverUrl || match.backdropUri || 'https://via.placeholder.com/800x450?text=FIFA+PLUS';
-    const title = match.title || 'Football Match';
-    const start = new Date(match.startDate).toLocaleString();
-    const isLive = match.status === 'live' || match.status === 'started';
-    const category = match.category || 'Football';
-
-    // Extract stream data if available
-    let playerHref = '#';
-    if (isLive && match.stream_data) {
-      const mpd = match.stream_data.mpd_link || '';
-      const keys = (match.stream_data.decryption_keys || []).join(',');
-      playerHref = `${PLAYER_URL}?url=${encodeURIComponent(mpd)}&hexKeys=${encodeURIComponent(keys)}`;
+    // Build player URL — only for live matches with stream data
+    let href = null;
+    if (isLive && m.stream_data?.mpd_link) {
+      const params = new URLSearchParams({
+        url: m.stream_data.mpd_link,
+        title: title,
+      });
+      if (m.stream_data.decryption_keys?.length) {
+        params.set('keys', m.stream_data.decryption_keys.join(','));
+      }
+      href = PLAYER + '?' + params.toString();
     }
 
-    wrap.innerHTML = `
-      <div class="match-card">
-        <div class="card-image">
-          <img src="${thumb}" alt="${title}" onerror="this.src='https://via.placeholder.com/800x450?text=FIFA+PLUS'">
-          ${isLive ? '<div class="live-tag"><span class="w-2 h-2 bg-white rounded-full"></span>Live</div>' : ''}
-        </div>
-        <div class="card-content">
-          <div class="match-category">${category}</div>
-          <h3 class="match-title">${title}</h3>
-          <div class="match-meta">
-            <span><i class="far fa-calendar-alt mr-2"></i>${start}</span>
-          </div>
-          <a href="${playerHref}" class="watch-btn ${!isLive || playerHref === '#' ? 'upcoming' : ''}">
-            <i class="fas ${isLive ? 'fa-play' : 'fa-clock'}"></i> 
-            ${isLive ? (playerHref === '#' ? 'LIVE SOON' : 'WATCH LIVE') : 'UPCOMING'}
-          </a>
-        </div>
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <div class="card-thumb">
+        <img
+          src="${thumb || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22><rect fill=%22%230d1220%22 width=%22800%22 height=%22450%22/><text x=%2250%25%22 y=%2250%25%22 fill=%22%23334%22 font-size=%2240%22 text-anchor=%22middle%22 dy=%22.35em%22>⚽</text></svg>'}"
+          alt="${title}"
+          loading="lazy"
+          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22><rect fill=%22%230d1220%22 width=%22800%22 height=%22450%22/><text x=%2250%25%22 y=%2250%25%22 fill=%22%23334%22 font-size=%2240%22 text-anchor=%22middle%22 dy=%22.35em%22>⚽</text></svg>'"
+        >
+        ${isLive
+          ? '<div class="badge-live"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> LIVE</div>'
+          : '<div class="badge-upcoming">UPCOMING</div>'
+        }
+      </div>
+      <div class="card-body">
+        <div class="card-cat">${cat}</div>
+        <div class="card-title">${title}</div>
+        ${start ? `<div class="card-meta"><i class="far fa-clock"></i> ${start}</div>` : ''}
+        ${href
+          ? `<a href="${href}" class="btn-watch live"><i class="fas fa-play"></i> WATCH LIVE</a>`
+          : `<div class="btn-watch upcoming"><i class="fas fa-${isLive ? 'signal' : 'clock'}"></i> ${isLive ? 'STREAM UNAVAILABLE' : 'UPCOMING'}</div>`
+        }
       </div>`;
-    return wrap;
+    return div;
   }
 
-  fetchData();
-  setInterval(fetchData, 300000); // Refresh every 5 mins
+  load();
+  setInterval(load, 5 * 60 * 1000);
 </script>
 </body>
 </html>
