@@ -97,81 +97,78 @@
         }
       });  
   
-      // Get params from URL or use defaults from user demo
+      // Get params from URL or use defaults
       const urlParams = new URLSearchParams(window.location.search);
       
-      // ✅ DRM Key + MPD URL  
-      let drmConfig = {  
-        clearKeys: {  
-          "0b42be2664d7e811d04f3e504e0924c5": "ae24090123b8c72ac5404dc152847cb8"
-        }  
-      };  
-  
+      let drmConfig = { clearKeys: {} };
       let streamUrl = urlParams.get('url') || "https://a151aivottlinear-a.akamaihd.net/OTTB/sin-nitro/live/dash/enc/8m8cd46i1t/out/v1/83985c68e4174e90a58a1f2c024be4c9/cenc.mpd";
       
-      // If keys are passed in URL, use them
       const hexKeys = urlParams.get('hexKeys');
       if (hexKeys) {
-        const keys = {};
         hexKeys.split(',').forEach(pair => {
           const [k, v] = pair.split(':');
-          if (k && v) keys[k.trim()] = v.trim();
+          if (k && v) drmConfig.clearKeys[k.trim()] = v.trim();
         });
-        drmConfig.clearKeys = keys;
+      } else {
+        // Default demo keys
+        drmConfig.clearKeys["0b42be2664d7e811d04f3e504e0924c5"] = "ae24090123b8c72ac5404dc152847cb8";
       }
   
       player.configure({  
         drm: drmConfig,  
         streaming: {  
           lowLatencyMode: true,  
-          bufferingGoal: 15,  
-          rebufferingGoal: 2,  
-          bufferBehind: 15,  
+          bufferingGoal: 20,  
+          rebufferingGoal: 5,  
+          bufferBehind: 30,  
           retryParameters: {  
-            timeout: 10000,  
+            timeout: 30000,  
             maxAttempts: 5,  
-            baseDelay: 300,  
-            backoffFactor: 1.2  
-          },  
-          segmentRequestTimeout: 8000,  
-          segmentPrefetchLimit: 2,  
-          useNativeHlsOnSafari: true  
+            baseDelay: 1000,  
+            backoffFactor: 2  
+          }
         },  
         manifest: {  
           retryParameters: {  
-            timeout: 8000,  
-            maxAttempts: 3  
+            timeout: 30000,  
+            maxAttempts: 5  
           }  
         }  
       });  
   
-      player.addEventListener('error', (event) => {  
-        console.error('Shaka Player Error:', event.detail);  
+      const net = player.getNetworkingEngine();
+      const PROXY = '/api/proxy?u=';
+      
+      // Prepare headers for proxy
+      const headers = [
+        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer: https://www.plus.fifa.com/',
+        'Origin: https://www.plus.fifa.com'
+      ];
+      const hParam = '&headers=' + encodeURIComponent(JSON.stringify(headers));
+
+      net.registerRequestFilter((type, req) => {
+        if (req.uris[0].startsWith('http') && !req.uris[0].includes(location.origin) && !req.uris[0].includes('/api/proxy')) {
+          req.uris[0] = PROXY + encodeURIComponent(req.uris[0]) + hParam;
+        }
+      });
+  
+      player.addEventListener('error', (event) => {
+        console.error('Shaka Player Error:', event.detail);
         document.getElementById('status-overlay').innerText = 'Error: ' + event.detail.code;
       });  
   
-      const net = player.getNetworkingEngine();
-      const PROXY = '/api/proxy?u=';
-      net.registerRequestFilter((type, req) => {
-        req.uris = req.uris.map(uri => {
-          if (uri.startsWith('http') && !uri.includes(location.origin) && !uri.includes('/api/proxy')) {
-            return PROXY + encodeURIComponent(uri);
-          }
-          return uri;
-        });
-      });
-
       try {  
         document.getElementById('status-overlay').innerText = 'Loading stream...';
         await player.load(streamUrl);  
         console.log("Stream loaded successfully");  
         document.getElementById('status-overlay').innerText = '';
+        await video.play();
       } catch (error) {  
         console.error('Load error:', error);  
-        document.getElementById('status-overlay').innerText = 'Load Error';
+        document.getElementById('status-overlay').innerText = 'Load Error: ' + error.code;
       }  
     });  
   </script>  
-  <script>(function(s){s.dataset.zone='10603308',s.src='https://bvtpk.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>  
 </html>
