@@ -137,7 +137,7 @@
       });  
   
       const net = player.getNetworkingEngine();
-      const PROXY = '/api/proxy?u=';
+      const PROXY = window.location.origin + '/api/proxy?u=';
       
       // Prepare headers for proxy
       const headers = [
@@ -148,9 +148,12 @@
       const hParam = '&headers=' + encodeURIComponent(JSON.stringify(headers));
 
       net.registerRequestFilter((type, req) => {
-        if (req.uris[0].startsWith('http') && !req.uris[0].includes(location.origin) && !req.uris[0].includes('/api/proxy')) {
-          req.uris[0] = PROXY + encodeURIComponent(req.uris[0]) + hParam;
-        }
+        req.uris = req.uris.map(uri => {
+          if (uri.startsWith('http') && !uri.includes(location.origin) && !uri.includes('/api/proxy')) {
+            return PROXY + encodeURIComponent(uri) + hParam;
+          }
+          return uri;
+        });
       });
   
       player.addEventListener('error', (event) => {
