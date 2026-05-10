@@ -36,8 +36,8 @@ async function handleProxy(targetUrl, requestUrl) {
     const fetchHeaders = {
       'User-Agent': extraHeaders['user-agent'] ||
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0',
-      'Referer':    extraHeaders['referer'] || 'https://www.icc-cricket.com/',
-      'Origin':     extraHeaders['origin']  || 'https://www.icc-cricket.com',
+      'Referer':    extraHeaders['referer'] || 'https://www.plus.fifa.com/',
+      'Origin':     extraHeaders['origin']  || 'https://www.plus.fifa.com',
       'Accept':     '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
     };

@@ -1,0 +1,177 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+  <meta charset="UTF-8">  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+  <title>Sportlink-FIFA HUB Player</title>     
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.ui.min.js" crossorigin="anonymous"></script>  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/controls.min.css" crossorigin="anonymous">  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-FMP9REY96D"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-FMP9REY96D');
+  </script>
+  <style>  
+    * { margin: 0; padding: 0; box-sizing: border-box; }  
+    html, body {  
+      background: #000;  
+      height: 100vh;  
+      width: 100vw;  
+      overflow: hidden;  
+      font-family: system-ui, -apple-system, sans-serif;  
+    }  
+    .shaka-video-container {  
+      position: absolute;  
+      inset: 0;  
+      width: 100%;  
+      height: 100%;  
+    }  
+    video {  
+      width: 100%;  
+      height: 100%;  
+      background: #000;  
+      object-fit: contain;  
+    }  
+    .shaka-spinner-container,  
+    .shaka-spinner,  
+    .shaka-spinner-svg {  
+      display: none !important;  
+      visibility: hidden !important;  
+      opacity: 0 !important;  
+    }  
+    #status-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      color: rgba(255,255,255,0.5);
+      font-size: 10px;
+      pointer-events: none;
+    }
+  </style>  
+</head>  
+<body>  
+  <div id="status-overlay">Initialising...</div>
+  <a href="index.html" style="position:absolute; top:20px; left:20px; z-index:100; color:white; text-decoration:none; background:rgba(0,136,255,0.5); padding:10px 20px; border-radius:50px; font-weight:bold; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.2);">
+    <i class="fas fa-arrow-left mr-2"></i> BACK TO HUB
+  </a>
+  <div class="shaka-video-container" data-shaka-player>  
+    <video autoplay playsinline preload="metadata" poster=""></video>  
+  </div>  
+  
+  <script>  
+    document.addEventListener('DOMContentLoaded', async () => {  
+      shaka.polyfill.installAll();  
+  
+      if (!shaka.Player.isBrowserSupported()) {  
+        console.error('Browser not supported');  
+        document.getElementById('status-overlay').innerText = 'Browser not supported';
+        return;  
+      }  
+  
+      const video = document.querySelector('video');  
+      const player = new shaka.Player();  
+      await player.attach(video);  
+  
+      const container = document.querySelector('.shaka-video-container');  
+      const ui = new shaka.ui.Overlay(player, container, video);  
+  
+      ui.configure({  
+        controlPanelElements: [  
+          'play_pause', 'time_and_duration', 'mute', 'volume',  
+          'spacer', 'language', 'captions', 'picture_in_picture',  
+          'quality', 'fullscreen'  
+        ],  
+        volumeBarColors: {  
+          base: 'rgba(0, 136, 255, 0.3)',  
+          level: 'rgb(0, 136, 255)'  
+        },  
+        seekBarColors: {  
+          base: 'rgba(0, 136, 255, 0.3)',  
+          buffered: 'rgba(0, 136, 255, 0.6)',  
+          played: 'rgb(0, 136, 255)'  
+        }
+      });  
+  
+      // Get params from URL or use defaults from user demo
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // ✅ DRM Key + MPD URL  
+      let drmConfig = {  
+        clearKeys: {  
+          "0b42be2664d7e811d04f3e504e0924c5": "ae24090123b8c72ac5404dc152847cb8"
+        }  
+      };  
+  
+      let streamUrl = urlParams.get('url') || "https://a151aivottlinear-a.akamaihd.net/OTTB/sin-nitro/live/dash/enc/8m8cd46i1t/out/v1/83985c68e4174e90a58a1f2c024be4c9/cenc.mpd";
+      
+      // If keys are passed in URL, use them
+      const hexKeys = urlParams.get('hexKeys');
+      if (hexKeys) {
+        const keys = {};
+        hexKeys.split(',').forEach(pair => {
+          const [k, v] = pair.split(':');
+          if (k && v) keys[k.trim()] = v.trim();
+        });
+        drmConfig.clearKeys = keys;
+      }
+  
+      player.configure({  
+        drm: drmConfig,  
+        streaming: {  
+          lowLatencyMode: true,  
+          bufferingGoal: 15,  
+          rebufferingGoal: 2,  
+          bufferBehind: 15,  
+          retryParameters: {  
+            timeout: 10000,  
+            maxAttempts: 5,  
+            baseDelay: 300,  
+            backoffFactor: 1.2  
+          },  
+          segmentRequestTimeout: 8000,  
+          segmentPrefetchLimit: 2,  
+          useNativeHlsOnSafari: true  
+        },  
+        manifest: {  
+          retryParameters: {  
+            timeout: 8000,  
+            maxAttempts: 3  
+          }  
+        }  
+      });  
+  
+      player.addEventListener('error', (event) => {  
+        console.error('Shaka Player Error:', event.detail);  
+        document.getElementById('status-overlay').innerText = 'Error: ' + event.detail.code;
+      });  
+  
+      const net = player.getNetworkingEngine();
+      const PROXY = '/api/proxy?u=';
+      net.registerRequestFilter((type, req) => {
+        req.uris = req.uris.map(uri => {
+          if (uri.startsWith('http') && !uri.includes(location.origin) && !uri.includes('/api/proxy')) {
+            return PROXY + encodeURIComponent(uri);
+          }
+          return uri;
+        });
+      });
+
+      try {  
+        document.getElementById('status-overlay').innerText = 'Loading stream...';
+        await player.load(streamUrl);  
+        console.log("Stream loaded successfully");  
+        document.getElementById('status-overlay').innerText = '';
+      } catch (error) {  
+        console.error('Load error:', error);  
+        document.getElementById('status-overlay').innerText = 'Load Error';
+      }  
+    });  
+  </script>  
+  <script>(function(s){s.dataset.zone='10603308',s.src='https://bvtpk.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>  
+</html>
