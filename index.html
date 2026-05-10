@@ -98,6 +98,10 @@
       border: 1px solid rgba(255, 255, 255, 0.1); margin-top: auto;
     }
     .watch-btn:hover { transform: scale(1.02); box-shadow: 0 15px 30px rgba(0, 136, 255, 0.4); filter: brightness(1.1); }
+    .watch-btn.upcoming {
+      background: rgba(255, 255, 255, 0.05); color: var(--text-muted);
+      cursor: not-allowed; pointer-events: none; border-color: transparent;
+    }
     
     .loader {
       width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: var(--primary);
@@ -122,11 +126,7 @@
       <h1 class="logo-text">Sportlink-FIFA HUB</h1>
     </div>
     <p class="text-blue-400 font-bold tracking-[0.4rem] mt-6 text-xs uppercase">Premium Football Events</p>
-    <div class="mt-8 flex justify-center">
-      <a href="fifa-play.html" class="tab-btn active">
-        <i class="fas fa-play-circle mr-2"></i> LAUNCH DEMO PLAYER
-      </a>
-    </div>
+    <!-- Demo button removed -->
   </header>
 
   <div class="section-tabs">
@@ -225,9 +225,9 @@
           <div class="match-meta">
             <span><i class="far fa-calendar-alt mr-2"></i>${start}</span>
           </div>
-          <a href="${playerHref}" class="watch-btn">
-            <i class="fas ${isLive ? 'fa-play' : 'fa-info-circle'}"></i> 
-            ${isLive ? 'WATCH LIVE' : 'MATCH DETAILS'}
+          <a href="${playerHref}" class="watch-btn ${!isLive ? 'upcoming' : ''}">
+            <i class="fas ${isLive ? 'fa-play' : 'fa-clock'}"></i> 
+            ${isLive ? 'WATCH LIVE' : 'UPCOMING'}
           </a>
         </div>
       </div>`;
