@@ -17,253 +17,161 @@
       --text: #f0f4ff;
       --muted: #6b7a99;
     }
-
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-
     body {
-      background: var(--bg);
-      font-family: 'Barlow', sans-serif;
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
+      background: var(--bg); font-family: 'Barlow', sans-serif;
+      color: var(--text); min-height: 100vh; overflow-x: hidden;
     }
-
     body::before {
-      content: '';
-      position: fixed; inset: 0; z-index: 0;
+      content:''; position:fixed; inset:0; z-index:0;
       background-image:
         linear-gradient(rgba(0,102,255,0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0,102,255,0.04) 1px, transparent 1px);
-      background-size: 60px 60px;
-      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
-      pointer-events: none;
+      background-size:60px 60px;
+      mask-image:radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+      pointer-events:none;
     }
-
     body::after {
-      content: '';
-      position: fixed;
-      top: -200px; left: 50%; transform: translateX(-50%);
-      width: 800px; height: 600px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(0,102,255,0.12) 0%, transparent 70%);
-      filter: blur(60px);
-      z-index: 0;
-      pointer-events: none;
+      content:''; position:fixed; top:-200px; left:50%; transform:translateX(-50%);
+      width:800px; height:600px; border-radius:50%;
+      background:radial-gradient(circle, rgba(0,102,255,0.12) 0%, transparent 70%);
+      filter:blur(60px); z-index:0; pointer-events:none;
     }
-
-    .wrap { max-width: 1300px; margin: 0 auto; padding: 0 24px 80px; position: relative; z-index: 1; }
-
+    .wrap { max-width:1300px; margin:0 auto; padding:0 24px 80px; position:relative; z-index:1; }
     header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 28px 0 48px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 40px;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:28px 0 48px; border-bottom:1px solid var(--border); margin-bottom:40px;
     }
-
-    .brand { display: flex; align-items: center; gap: 14px; }
-
+    .brand { display:flex; align-items:center; gap:14px; }
     .brand-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: linear-gradient(135deg, var(--blue), #003db3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; box-shadow: 0 8px 24px var(--blue-glow);
+      width:48px; height:48px; border-radius:12px;
+      background:linear-gradient(135deg, var(--blue), #003db3);
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; box-shadow:0 8px 24px var(--blue-glow);
     }
-
     .brand-name {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 900; font-size: 1.7rem; letter-spacing: 1px;
-      text-transform: uppercase;
+      font-family:'Barlow Condensed',sans-serif;
+      font-weight:900; font-size:1.7rem; letter-spacing:1px; text-transform:uppercase;
     }
-    .brand-name span { color: var(--blue); }
-
+    .brand-name span { color:var(--blue); }
     .live-indicator {
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(255,45,45,0.1); border: 1px solid rgba(255,45,45,0.3);
-      padding: 8px 18px; border-radius: 50px;
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700; font-size: 0.85rem; letter-spacing: 2px;
-      color: var(--red);
+      display:flex; align-items:center; gap:8px;
+      background:rgba(255,45,45,0.1); border:1px solid rgba(255,45,45,0.3);
+      padding:8px 18px; border-radius:50px;
+      font-family:'Barlow Condensed',sans-serif;
+      font-weight:700; font-size:0.85rem; letter-spacing:2px; color:var(--red);
     }
-
     .pulse-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--red);
-      animation: pulse 1.5s infinite;
+      width:8px; height:8px; border-radius:50%; background:var(--red);
+      animation:pulse 1.5s infinite;
     }
-
-    @keyframes pulse {
-      0%,100% { opacity:1; transform:scale(1); }
-      50%      { opacity:0.4; transform:scale(0.8); }
-    }
-
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
     .tabs {
-      display: flex; gap: 4px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px; padding: 4px;
-      width: fit-content; margin-bottom: 36px;
+      display:flex; gap:4px; background:var(--surface); border:1px solid var(--border);
+      border-radius:14px; padding:4px; width:fit-content; margin-bottom:36px;
     }
-
     .tab {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700; font-size: 0.9rem; letter-spacing: 1.5px;
-      text-transform: uppercase; padding: 10px 24px;
-      border-radius: 10px; cursor: pointer;
-      color: var(--muted); transition: all 0.25s;
-      border: none; background: none;
+      font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.9rem;
+      letter-spacing:1.5px; text-transform:uppercase; padding:10px 24px;
+      border-radius:10px; cursor:pointer; color:var(--muted); transition:all 0.25s;
+      border:none; background:none;
     }
-
-    .tab.active {
-      background: var(--blue); color: #fff;
-      box-shadow: 0 4px 16px var(--blue-glow);
-    }
-
-    .tab:hover:not(.active) { color: var(--text); }
-
+    .tab.active { background:var(--blue); color:#fff; box-shadow:0 4px 16px var(--blue-glow); }
+    .tab:hover:not(.active) { color:var(--text); }
     .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 24px;
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:24px;
     }
-
     .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px; overflow: hidden;
-      transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
-      display: flex; flex-direction: column;
-      animation: fadeUp 0.5s both;
+      background:var(--surface); border:1px solid var(--border); border-radius:20px;
+      overflow:hidden; transition:transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+      display:flex; flex-direction:column; animation:fadeUp 0.5s both;
     }
-
-    @keyframes fadeUp {
-      from { opacity:0; transform:translateY(20px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-
+    @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
     .card:hover {
-      transform: translateY(-6px);
-      border-color: rgba(0,102,255,0.4);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--blue-glow);
+      transform:translateY(-6px); border-color:rgba(0,102,255,0.4);
+      box-shadow:0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--blue-glow);
     }
-
-    .card-thumb {
-      position: relative; height: 190px; overflow: hidden;
-      background: #0d1220;
-    }
-
-    .card-thumb img {
-      width: 100%; height: 100%; object-fit: cover;
-      transition: transform 0.6s;
-    }
-
-    .card:hover .card-thumb img { transform: scale(1.08); }
-
+    .card-thumb { position:relative; height:190px; overflow:hidden; background:#0d1220; }
+    .card-thumb img { width:100%; height:100%; object-fit:cover; transition:transform 0.6s; }
+    .card:hover .card-thumb img { transform:scale(1.08); }
     .card-thumb::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(7,9,15,0.75) 0%, transparent 55%);
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(to top, rgba(7,9,15,0.75) 0%, transparent 55%);
     }
-
     .badge-live {
-      position: absolute; top: 14px; left: 14px; z-index: 2;
-      background: var(--red); color: #fff;
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 800; font-size: 0.72rem; letter-spacing: 2px;
-      padding: 4px 12px; border-radius: 50px;
-      display: flex; align-items: center; gap: 6px;
-      box-shadow: 0 4px 16px rgba(255,45,45,0.5);
+      position:absolute; top:14px; left:14px; z-index:2;
+      background:var(--red); color:#fff;
+      font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:0.72rem;
+      letter-spacing:2px; padding:4px 12px; border-radius:50px;
+      display:flex; align-items:center; gap:6px;
+      box-shadow:0 4px 16px rgba(255,45,45,0.5);
     }
-
     .badge-upcoming {
-      position: absolute; top: 14px; left: 14px; z-index: 2;
-      background: rgba(0,0,0,0.55); color: var(--muted);
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700; font-size: 0.72rem; letter-spacing: 2px;
-      padding: 4px 12px; border-radius: 50px;
-      border: 1px solid var(--border);
-      backdrop-filter: blur(8px);
+      position:absolute; top:14px; left:14px; z-index:2;
+      background:rgba(0,0,0,0.55); color:var(--muted);
+      font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.72rem;
+      letter-spacing:2px; padding:4px 12px; border-radius:50px;
+      border:1px solid var(--border); backdrop-filter:blur(8px);
     }
-
-    .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
-
+    .card-body { padding:20px; flex:1; display:flex; flex-direction:column; }
     .card-cat {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700; font-size: 0.72rem; letter-spacing: 2.5px;
-      text-transform: uppercase; color: var(--blue); margin-bottom: 8px;
+      font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.72rem;
+      letter-spacing:2.5px; text-transform:uppercase; color:var(--blue); margin-bottom:8px;
     }
-
     .card-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 800; font-size: 1.25rem; line-height: 1.25;
-      margin-bottom: 12px;
+      font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:1.25rem;
+      line-height:1.25; margin-bottom:12px;
     }
-
     .card-meta {
-      font-size: 0.82rem; color: var(--muted);
-      display: flex; align-items: center; gap: 6px;
-      margin-bottom: 20px;
+      font-size:0.82rem; color:var(--muted); display:flex; align-items:center;
+      gap:6px; margin-bottom:20px;
     }
-    .card-meta i { color: var(--blue); font-size: 0.75rem; }
-
+    .card-meta i { color:var(--blue); font-size:0.75rem; }
     .btn-watch {
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      padding: 13px; border-radius: 12px;
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 800; font-size: 1rem; letter-spacing: 1.5px;
-      text-transform: uppercase; text-decoration: none;
-      transition: all 0.25s; margin-top: auto;
-      border: none; cursor: pointer;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      padding:13px; border-radius:12px;
+      font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:1rem;
+      letter-spacing:1.5px; text-transform:uppercase; text-decoration:none;
+      transition:all 0.25s; margin-top:auto; border:none; cursor:pointer;
     }
-
     .btn-watch.live {
-      background: linear-gradient(135deg, var(--blue) 0%, #0044cc 100%);
-      color: #fff;
-      box-shadow: 0 6px 20px var(--blue-glow);
+      background:linear-gradient(135deg, var(--blue) 0%, #0044cc 100%); color:#fff;
+      box-shadow:0 6px 20px var(--blue-glow);
     }
-
     .btn-watch.live:hover {
-      filter: brightness(1.15);
-      box-shadow: 0 10px 30px var(--blue-glow);
-      transform: scale(1.02);
+      filter:brightness(1.15); box-shadow:0 10px 30px var(--blue-glow); transform:scale(1.02);
     }
-
     .btn-watch.upcoming {
-      background: rgba(255,255,255,0.04);
-      color: var(--muted);
-      border: 1px solid var(--border);
-      cursor: default; pointer-events: none;
+      background:rgba(255,255,255,0.04); color:var(--muted);
+      border:1px solid var(--border); cursor:default; pointer-events:none;
     }
-
     .state {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 80px 0; text-align: center; gap: 16px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:80px 0; text-align:center; gap:16px;
     }
-
     .spinner {
-      width: 44px; height: 44px;
-      border: 3px solid var(--border);
-      border-top-color: var(--blue);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      width:44px; height:44px; border:3px solid var(--border);
+      border-top-color:var(--blue); border-radius:50%; animation:spin 0.8s linear infinite;
     }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .state p { color: var(--muted); font-size: 0.9rem; }
-
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .state p { color:var(--muted); font-size:0.9rem; }
+    /* ── Error box ── */
+    .error-detail {
+      background:rgba(255,60,60,0.07); border:1px solid rgba(255,60,60,0.2);
+      border-radius:10px; padding:14px 18px; max-width:520px; width:100%;
+      font-size:0.78rem; color:#ff9999; text-align:left;
+      font-family:monospace; line-height:1.6; word-break:break-all;
+    }
     .retry-btn {
-      margin-top: 4px; padding: 10px 28px; border-radius: 50px;
-      background: var(--blue); color: #fff; border: none;
-      font-weight: 700; font-size: 0.9rem; cursor: pointer;
+      margin-top:4px; padding:10px 28px; border-radius:50px;
+      background:var(--blue); color:#fff; border:none;
+      font-weight:700; font-size:0.9rem; cursor:pointer;
     }
-    .retry-btn:hover { background: #0055dd; }
-
-    .hidden { display: none !important; }
-
+    .retry-btn:hover { background:#0055dd; }
+    .hidden { display:none !important; }
     footer {
-      text-align: center; margin-top: 60px;
-      color: var(--muted); font-size: 0.78rem;
-      border-top: 1px solid var(--border); padding-top: 30px;
+      text-align:center; margin-top:60px; color:var(--muted); font-size:0.78rem;
+      border-top:1px solid var(--border); padding-top:30px;
     }
   </style>
 </head>
@@ -275,9 +183,7 @@
       <div class="brand-icon"><i class="fas fa-futbol"></i></div>
       <div class="brand-name">Sport<span>link</span> FIFA Hub</div>
     </div>
-    <div class="live-indicator">
-      <div class="pulse-dot"></div> LIVE NOW
-    </div>
+    <div class="live-indicator"><div class="pulse-dot"></div> LIVE NOW</div>
   </header>
 
   <div class="tabs">
@@ -293,7 +199,8 @@
 
   <div id="state-error" class="state hidden">
     <i class="fas fa-exclamation-triangle" style="font-size:2rem;color:#ff6b6b;"></i>
-    <p id="error-msg">Failed to load match data.</p>
+    <p id="error-msg" style="color:var(--muted)">Failed to load match data.</p>
+    <pre id="error-detail" class="error-detail hidden"></pre>
     <button class="retry-btn" onclick="loadMatches()">Retry</button>
   </div>
 
@@ -311,38 +218,74 @@
 
 </div>
 <script>
-  // ── Config ────────────────────────────────────────────────────────────────
   const JSON_URL    = 'https://raw.githubusercontent.com/srhady/fifaplus/refs/heads/main/match_data.json';
-  const PLAYER_PAGE = 'fifa-play.html'; // ← your actual player filename on Cloudflare Pages
+  const PLAYER_PAGE = 'fifa-play.html';
 
   let matches   = [];
   let activeTab = 'all';
 
-  // ── Fetch JSON via proxy (avoids GitHub CORS block) ───────────────────────
   async function loadMatches() {
     showState('state-loading');
+
+    // ── Step 1: verify proxy is alive ──────────────────────────────────────
+    try {
+      const probe = await fetch('/api/proxy');
+      if (probe.status === 404) {
+        throw new Error(
+          'Proxy function not found (404).\n\n' +
+          'Make sure functions/api/proxy.js is committed to your GitHub repo ' +
+          'and Cloudflare Pages has finished deploying.'
+        );
+      }
+    } catch (err) {
+      if (err.message.includes('404') || err.message.includes('Proxy')) {
+        setError('Proxy not deployed', err.message);
+        return;
+      }
+      // network error — proxy may still work, continue
+    }
+
+    // ── Step 2: fetch JSON through proxy ───────────────────────────────────
     try {
       const url = '/api/proxy?u=' + encodeURIComponent(JSON_URL) + '&_=' + Date.now();
       const res  = await fetch(url);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
 
-      const data = JSON.parse(await res.text());
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Proxy returned HTTP ${res.status}\n${body.slice(0, 300)}`);
+      }
+
+      const text = await res.text();
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          'Proxy returned non-JSON response.\n\n' +
+          'First 200 chars:\n' + text.slice(0, 200)
+        );
+      }
+
       matches = data.matches || [];
-
       const lu = data.metadata?.last_update_time;
       if (lu) document.getElementById('last-updated').textContent = 'Last updated: ' + lu;
 
       renderMatches();
-      showState('grid');
+
     } catch (err) {
       console.error('[loadMatches]', err);
-      document.getElementById('error-msg').textContent =
-        'Could not load matches: ' + err.message;
-      showState('state-error');
+      setError('Could not load matches', err.message);
     }
   }
 
-  // ── Tab switch ────────────────────────────────────────────────────────────
+  function setError(title, detail) {
+    document.getElementById('error-msg').textContent = title;
+    const box = document.getElementById('error-detail');
+    if (detail) { box.textContent = detail; box.classList.remove('hidden'); }
+    showState('state-error');
+  }
+
   function switchTab(tab) {
     activeTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
@@ -350,7 +293,6 @@
     renderMatches();
   }
 
-  // ── Render grid ───────────────────────────────────────────────────────────
   function renderMatches() {
     let list = matches;
     if (activeTab === 'live')     list = matches.filter(m => m.status === 'live' || m.status === 'started');
@@ -368,7 +310,6 @@
     });
   }
 
-  // ── Build card ────────────────────────────────────────────────────────────
   function buildCard(m) {
     const isLive = m.status === 'live' || m.status === 'started';
     const thumb  = m.wideCoverUrl || m.backdropUri || '';
@@ -376,25 +317,23 @@
     const cat    = m.category || 'Football';
     const start  = m.startDate ? new Date(m.startDate).toLocaleString() : '';
 
-    // Player link — only when live AND stream_data.mpd_link exists
     let href = null;
     if (isLive && m.stream_data?.mpd_link) {
       const p = new URLSearchParams({ url: m.stream_data.mpd_link, title });
-      if (m.stream_data.decryption_keys?.length) {
+      if (m.stream_data.decryption_keys?.length)
         p.set('keys', m.stream_data.decryption_keys.join(','));
-      }
       href = PLAYER_PAGE + '?' + p.toString();
     }
 
-    const fallback = 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A//www.w3.org/2000/svg%22 width%3D%22800%22 height%3D%22450%22%3E%3Crect fill%3D%22%230d1220%22 width%3D%22800%22 height%3D%22450%22/%3E%3Ctext x%3D%2250%25%22 y%3D%2250%25%22 fill%3D%22%23334466%22 font-size%3D%2260%22 text-anchor%3D%22middle%22 dy%3D%22.35em%22%3E%E2%9A%BD%3C/text%3E%3C/svg%3E';
+    const fb = 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A//www.w3.org/2000/svg%22 width%3D%22800%22 height%3D%22450%22%3E%3Crect fill%3D%22%230d1220%22 width%3D%22800%22 height%3D%22450%22/%3E%3Ctext x%3D%2250%25%22 y%3D%2250%25%22 fill%3D%22%23334466%22 font-size%3D%2260%22 text-anchor%3D%22middle%22 dy%3D%22.35em%22%3E%E2%9A%BD%3C/text%3E%3C/svg%3E';
 
     const div = document.createElement('div');
     div.className = 'card';
     div.innerHTML = `
       <div class="card-thumb">
-        <img src="${thumb || fallback}" alt="${title}" loading="lazy" onerror="this.src='${fallback}'">
+        <img src="${thumb || fb}" alt="${title}" loading="lazy" onerror="this.src='${fb}'">
         ${isLive
-          ? `<div class="badge-live"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> LIVE</div>`
+          ? `<div class="badge-live"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block"></span> LIVE</div>`
           : `<div class="badge-upcoming">UPCOMING</div>`}
       </div>
       <div class="card-body">
@@ -408,14 +347,12 @@
     return div;
   }
 
-  // ── Show/hide state panels ────────────────────────────────────────────────
   function showState(id) {
-    ['state-loading','state-error','state-empty','grid'].forEach(x => {
-      document.getElementById(x).classList.toggle('hidden', x !== id);
-    });
+    ['state-loading','state-error','state-empty','grid'].forEach(x =>
+      document.getElementById(x).classList.toggle('hidden', x !== id)
+    );
   }
 
-  // ── Boot ──────────────────────────────────────────────────────────────────
   loadMatches();
   setInterval(loadMatches, 5 * 60 * 1000);
 </script>
